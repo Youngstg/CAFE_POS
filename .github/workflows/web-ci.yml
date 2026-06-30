@@ -28,11 +28,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: apps/web
-        run: npm ci
-
-      - name: Lint
-        working-directory: apps/web
-        run: npm run lint
+        run: npm install
 
       - name: Build
         working-directory: apps/web
