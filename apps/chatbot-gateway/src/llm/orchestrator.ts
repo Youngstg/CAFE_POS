@@ -3,7 +3,7 @@ import { LlmToolDispatcher } from './tools/dispatcher';
 export interface OrchestratorInput {
   channel: 'whatsapp' | 'telegram';
   userId: string;
-  role: 'customer' | 'cashier' | 'owner' | 'kitchen';
+  role: 'customer' | 'cashier' | 'owner' | 'kitchen' | 'guest';
   tenantId: string;
   message: string;
 }
