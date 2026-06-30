@@ -1,0 +1,102 @@
+version: '3.9'
+
+# ============================================================
+# docker-compose.prod.yml — Production environment
+# Uses PostgreSQL (production-grade)
+# Run: docker compose -f infra/docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+  # ──────────────────────────────────────────────
+  # Database: PostgreSQL (production)
+  # ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: coffeeos_db_prod
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Backend: Laravel API
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: coffeeos_backend_prod
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Web: React Frontend (served by Nginx)
+  # ──────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    container_name: coffeeos_web_prod
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Chatbot Gateway
+  # ──────────────────────────────────────────────
+  chatbot-gateway:
+    build:
+      context: .
+      dockerfile: infra/docker/chatbot-gateway.Dockerfile
+    container_name: coffeeos_chatbot_prod
+    environment:
+      NODE_ENV: production
+      BACKEND_API_URL: http://backend:9000/api/v1
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Reverse Proxy: Nginx
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: coffeeos_nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx:/etc/nginx/conf.d:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+      - web
+      - chatbot-gateway
+    restart: unless-stopped
+
+volumes:
+  db_data:

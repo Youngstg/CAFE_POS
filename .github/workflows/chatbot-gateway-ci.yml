@@ -1,0 +1,39 @@
+name: Chatbot Gateway CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/chatbot-gateway/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/chatbot-gateway/**'
+
+jobs:
+  build:
+    name: TypeScript Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/chatbot-gateway/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/chatbot-gateway
+        run: npm ci
+
+      - name: Type check
+        working-directory: apps/chatbot-gateway
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: apps/chatbot-gateway
+        run: npm run build

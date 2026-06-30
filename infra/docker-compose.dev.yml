@@ -1,0 +1,89 @@
+version: '3.9'
+
+# ============================================================
+# docker-compose.dev.yml — Development environment
+# Uses MySQL (lightweight for local dev)
+# Run: docker compose -f infra/docker-compose.dev.yml up -d
+# ============================================================
+
+services:
+  # ──────────────────────────────────────────────
+  # Database: MySQL (dev only)
+  # ──────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: coffeeos_db_dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: coffeeos
+      MYSQL_USER: coffeeos
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ──────────────────────────────────────────────
+  # Backend: Laravel API
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+      target: app
+    container_name: coffeeos_backend_dev
+    ports:
+      - "8000:9000"
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: coffeeos
+      DB_USERNAME: coffeeos
+      DB_PASSWORD: secret
+    volumes:
+      - ./apps/backend:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────
+  # Web: React Frontend (dev server via Vite)
+  # ──────────────────────────────────────────────
+  web:
+    image: node:20-alpine
+    container_name: coffeeos_web_dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web:/app
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+
+  # ──────────────────────────────────────────────
+  # Chatbot Gateway
+  # ──────────────────────────────────────────────
+  chatbot-gateway:
+    image: node:20-alpine
+    container_name: coffeeos_chatbot_dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/chatbot-gateway:/app
+    environment:
+      BACKEND_API_URL: http://backend:9000/api/v1
+      NODE_ENV: development
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

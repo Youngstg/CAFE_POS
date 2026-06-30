@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "CoffeeOS API",
+    "description": "Complete API collection for CoffeeOS POS & Chatbot system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"owner@coffeeos.id\", \"password\": \"password\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/logout",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Menu",
+      "item": [
+        {
+          "name": "Get All Menus",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/menus",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Create Menu",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/menus",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Kopi Susu\", \"price\": 25000, \"category_id\": 1, \"is_available\": true}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/orders",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/orders",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"items\": [{\"menu_id\": 1, \"qty\": 2, \"notes\": \"less sugar\"}], \"table_number\": \"A1\"}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "item": [
+        {
+          "name": "Get Stock",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/stock",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shifts",
+      "item": [
+        {
+          "name": "Open Shift",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/shifts",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"opening_cash\": 500000}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Close Shift",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/shifts/{{shift_id}}/close",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"closing_cash\": 750000}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

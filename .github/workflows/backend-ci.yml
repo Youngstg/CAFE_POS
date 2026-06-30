@@ -1,0 +1,77 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/backend/**'
+
+jobs:
+  test:
+    name: Laravel Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: coffeeos_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, bcmath, mysql, pgsql, gd
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: apps/backend/vendor
+          key: composer-${{ hashFiles('apps/backend/composer.lock') }}
+
+      - name: Install Composer dependencies
+        working-directory: apps/backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copy .env
+        working-directory: apps/backend
+        run: cp .env.example .env
+
+      - name: Generate app key
+        working-directory: apps/backend
+        run: php artisan key:generate
+
+      - name: Run migrations
+        working-directory: apps/backend
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: coffeeos_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
+      - name: Run tests
+        working-directory: apps/backend
+        run: php artisan test --parallel
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: coffeeos_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
