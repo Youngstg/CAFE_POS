@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-grilled-corn: #F7E7CF;
+  --color-smoked-mustard: #FDBB4D;
+  --color-spiced-chili: #96311D;
+  --font-lato: "Lato", sans-serif;
+  --font-poppins: "Poppins", sans-serif;
+}
+
+body {
+  background-color: var(--color-grilled-corn);
+  color: var(--color-spiced-chili);
+  font-family: var(--font-poppins);
+}
+
+h1, h2, h3, h4, h5, h6, .font-lato {
+  font-family: var(--font-lato);
+}
+
+/* Button style from the image (bordered red button) */
+.btn-primary {
+  @apply bg-transparent border-2 border-spiced-chili text-spiced-chili font-lato font-bold py-3 px-6 hover:bg-spiced-chili hover:text-white transition-colors duration-300;
+}

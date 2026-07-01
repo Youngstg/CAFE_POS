@@ -8,8 +8,6 @@ import Cashier from './pages/pos/Cashier';
 import StaffManagement from './pages/pos/StaffManagement';
 import KitchenDisplay from './pages/pos/KitchenDisplay';
 import DailyStock from './pages/pos/DailyStock';
-import EMenu from './pages/customer/EMenu';
-import CheckoutQR from './pages/customer/CheckoutQR';
 
 // Komponen Sidebar
 const Sidebar = ({ activePath }) => {
@@ -357,9 +355,7 @@ const AppLayout = () => {
             <Route path="/pos/staff" element={<StaffManagement />} />
             <Route path="/pos/stock" element={<DailyStock />} />
             
-            {/* Customer Public Routes */}
-            <Route path="/menu/:tenantId/:outletId/:tableNumber" element={<EMenu />} />
-            <Route path="/checkout/:orderId" element={<CheckoutQR />} />
+            {/* Customer Routes dipindah ke apps/customer-web */}
 
             <Route path="*" element={
               <div className="text-center py-20 text-tertiary">
