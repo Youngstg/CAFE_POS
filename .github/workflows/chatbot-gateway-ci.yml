@@ -5,10 +5,13 @@ on:
     branches: [main, develop]
     paths:
       - 'apps/chatbot-gateway/**'
+      - '.github/workflows/chatbot-gateway-ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'apps/chatbot-gateway/**'
+      - '.github/workflows/chatbot-gateway-ci.yml'
+  workflow_dispatch:
 
 jobs:
   build:
