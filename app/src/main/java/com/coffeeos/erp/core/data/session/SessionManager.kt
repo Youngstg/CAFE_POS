@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.coffeeos.erp.core.domain.auth.UserRole
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +24,7 @@ class SessionManager @Inject constructor(
     private val TENANT = stringPreferencesKey("tenantId")
     private val OUTLET = stringPreferencesKey("outletId")
     private val NAME = stringPreferencesKey("displayName")
+    private val PIN_HASH = stringPreferencesKey("pinHash")
 
     data class Session(
         val uid: String,
@@ -44,6 +46,14 @@ class SessionManager @Inject constructor(
             e[TENANT] = s.tenantId; e[OUTLET] = s.outletId; e[NAME] = s.displayName
         }
     }
+
+    /** Hash PIN cepat (lihat PinHash). Disimpan terpisah agar ganti sesi tidak bocor. */
+    suspend fun savePinHash(hash: String) {
+        context.sessionStore.edit { it[PIN_HASH] = hash }
+    }
+
+    suspend fun readPinHash(): String? =
+        context.sessionStore.data.map { it[PIN_HASH] }.first()
 
     suspend fun clear() {
         context.sessionStore.edit { it.clear() }

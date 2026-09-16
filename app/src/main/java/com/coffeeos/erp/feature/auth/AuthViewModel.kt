@@ -25,6 +25,10 @@ class AuthViewModel @Inject constructor(
         val loading: Boolean = false,
         val error: String? = null,
         val session: SessionManager.Session? = null,
+        val hasQuickPin: Boolean = false,
+        val pinSaved: Boolean = false,
+        /** True hanya setelah login email tanpa PIN → AuthScreen tawarkan buat PIN dulu. */
+        val promptPinSetup: Boolean = false,
     )
 
     private val _ui = MutableStateFlow(UiState())
@@ -36,23 +40,73 @@ class AuthViewModel @Inject constructor(
             if (s != null) {
                 seeder.seedIfEmpty(s.outletId)
                 realtime.start(s.tenantId, s.outletId)
-                _ui.value = UiState(session = s)
+                _ui.value = UiState(session = s, hasQuickPin = auth.hasQuickPin())
             }
         }
     }
 
-    fun login(username: String, pin: String) {
+    private fun attached(s: SessionManager.Session) {
+        viewModelScope.launch {
+            seeder.seedIfEmpty(s.outletId)
+            realtime.start(s.tenantId, s.outletId)
+            _ui.value = UiState(session = s, hasQuickPin = auth.hasQuickPin())
+        }
+    }
+
+    /** Demo offline (evaluator tanpa Firebase). */
+    fun loginDemo(username: String, pin: String) {
         viewModelScope.launch {
             _ui.value = UiState(loading = true)
             try {
-                val result = auth.loginPin(username, pin)
-                seeder.seedIfEmpty(result.session.outletId)
-                realtime.start(result.session.tenantId, result.session.outletId)
-                _ui.value = UiState(session = result.session)
+                attached(auth.loginDemo(username, pin).session)
             } catch (e: Exception) {
                 _ui.value = UiState(error = e.message ?: "Login gagal")
             }
         }
+    }
+
+    /** Firebase email+password (butuh online sekali; claims role/tenant). */
+    fun loginEmail(email: String, password: String) {
+        viewModelScope.launch {
+            _ui.value = UiState(loading = true)
+            try {
+                val s = auth.loginEmail(email, password).session
+                val hasPin = auth.hasQuickPin()
+                seeder.seedIfEmpty(s.outletId)
+                realtime.start(s.tenantId, s.outletId)
+                _ui.value = UiState(session = s, hasQuickPin = hasPin, promptPinSetup = !hasPin)
+            } catch (e: Exception) {
+                _ui.value = UiState(error = e.message ?: "Login gagal")
+            }
+        }
+    }
+
+    /** PIN cepat offline (butuh sesi + PIN terdaftar). */
+    fun loginQuickPin(pin: String) {
+        viewModelScope.launch {
+            _ui.value = UiState(loading = true)
+            try {
+                attached(auth.loginQuickPin(pin).session)
+            } catch (e: Exception) {
+                _ui.value = UiState(error = e.message ?: "Login gagal")
+            }
+        }
+    }
+
+    fun setupPin(pin: String) {
+        viewModelScope.launch {
+            try {
+                auth.setupPin(pin)
+                _ui.value = _ui.value.copy(pinSaved = true, promptPinSetup = false, error = null)
+            } catch (e: Exception) {
+                _ui.value = _ui.value.copy(error = e.message)
+            }
+        }
+    }
+
+    /** Dilewati dari layar setup PIN (tetap bisa buat nanti — TODO pengaturan). */
+    fun skipPinSetup() {
+        _ui.value = _ui.value.copy(promptPinSetup = false)
     }
 
     fun logout() {

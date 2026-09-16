@@ -12,7 +12,7 @@ MVP-0 → MVP-4 selesai di level kode (belum dibuka di Android Studio — env ta
 
 | Modul | Status |
 |---|---|
-| Auth PIN offline + RBAC + session DataStore + seed demo | ✅ |
+| Auth | ✅ Email Firebase (Custom Claims role/tenant) + PIN cepat offline (hash) + demo |
 | Kasir (checkout deduct BOM, validasi STOP, struk Fake PDF, PAID) | ✅ |
 | Shift (buka modal, tutup rekonsiliasi, blokir saat pending sync) | ✅ |
 | Kitchen Display (antrean Room + tombol Masak/Siap + antrean sync) | ✅ |
@@ -25,7 +25,9 @@ MVP-0 → MVP-4 selesai di level kode (belum dibuka di Android Studio — env ta
 
 Verifikasi tanpa JDK: `python tools/verify_stock_rules.py` (10/10) +
 `python tools/verify_mvp.py` (15/15) + `python tools/verify_sync.py` (9/9) +
-`python tools/verify_inbound.py` (14/14) — cermin Python dari domain + sync Kotlin.
+`python tools/verify_inbound.py` (14/14) + `python tools/verify_auth.py` (17/17) —
+cermin Python dari domain + sync Kotlin.
+Setup login Firebase: `docs/firebase-auth.md` + `node tools/set-claims.js`.
 Test JVM mirror: `StockRulesTest`, `ShiftCalculationTest`, `OrderTotalsTest`,
 `PoCalculationTest`, `ConflictPolicyTest` → `./gradlew :app:testDebugUnitTest`.
 
