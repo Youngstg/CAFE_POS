@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Cangkir kopi sederhana: badan + gagang + uap -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,44h36v18a14,14 0 0,1 -14,14H48a14,14 0 0,1 -14,-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,47h5a8,8 0 0,1 0,16h-6v-5h5a3,3 0 0,0 0,-6h-4z" />
+    <path
+        android:strokeColor="#D7CCC8"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M46,36c-3,-5 3,-7 0,-12M58,36c-3,-5 3,-7 0,-12" />
+    <path
+        android:fillColor="#D7CCC8"
+        android:pathData="M30,82h48v4H30z" />
+</vector>

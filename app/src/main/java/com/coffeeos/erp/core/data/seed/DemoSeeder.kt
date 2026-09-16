@@ -38,5 +38,11 @@ class DemoSeeder @Inject constructor(private val dao: PosDao) {
             RecipeEntity(menuId = "m-croissant", ingredientId = "ing-croissant", qtyPerPortion = 1.0),
         ).forEach { dao.upsertRecipe(it) }
         dao.upsertSupplier(SupplierEntity("SUP-DEMO", outletId, "PT Susu Segar", "0812-0000-111", "Jl. Demo 1"))
+        dao.upsertPromo(
+            com.coffeeos.erp.core.data.local.PromoEntity(
+                "P-HEMAT10", outletId, "Hemat 10% min 50rb",
+                percentOff = 10, minOrder = 50_000, active = true
+            )
+        )
     }
 }

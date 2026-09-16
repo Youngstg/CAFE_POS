@@ -223,6 +223,89 @@ class FirestoreSync @Inject constructor(
                     SetOptions.merge()
                 ).await()
             }
+            // ---- Katalog (owner/admin; bahan juga gudang — lihat firestore.rules) ----
+            "MENU_UPSERT" -> {
+                val menuId = str(payload, "menuId") ?: return null
+                val menu = dao.listMenus(outletId).firstOrNull { it.id == menuId } ?: return null
+                col("menus").document(menuId).set(
+                    mapOf("name" to menu.name, "price" to menu.price),
+                    SetOptions.merge()
+                ).await()
+            }
+            "MENU_DELETE" -> {
+                val menuId = str(payload, "menuId") ?: return null
+                col("menus").document(menuId).delete().await()
+                // Bersihkan resep yatim di server.
+                val orphans = col("recipes").whereEqualTo("menuId", menuId).get().await()
+                if (!orphans.isEmpty) {
+                    val batch = db.batch()
+                    orphans.documents.forEach { batch.delete(it.reference) }
+                    batch.commit().await()
+                }
+            }
+            "INGREDIENT_UPSERT" -> {
+                val ingId = str(payload, "ingredientId") ?: return null
+                val ing = dao.ingredientById(ingId) ?: return null
+                db.runTransaction { txn ->
+                    val ref = col("ingredients").document(ingId)
+                    val exists = txn.get(ref).exists()
+                    val base = mutableMapOf<String, Any>(
+                        "name" to ing.name,
+                        "unit" to ing.unit,
+                        "updatedAt" to FieldValue.serverTimestamp()
+                    )
+                    ing.maxCapacity?.let { base["maxCapacity"] = it }
+                    // currentStock hanya ditulis saat dokumen belum ada agar tidak
+                    // menimpa deduct device lain; stok berjalan via STOCK_*.
+                    if (!exists) {
+                        base["currentStock"] = ing.currentStock
+                        base["isLow"] = ing.isLow
+                        base["isStopped"] = ing.isStopped
+                    }
+                    txn.set(ref, base, SetOptions.merge())
+                    null
+                }.await()
+            }
+            "INGREDIENT_DELETE" -> {
+                val ingId = str(payload, "ingredientId") ?: return null
+                col("ingredients").document(ingId).delete().await()
+            }
+            "RECIPE_UPSERT" -> {
+                val menuId = str(payload, "menuId") ?: return null
+                // Tulis ulang seluruh resep menu (idempoten, kunci = menuId+ingredientId).
+                val recipes = dao.recipesForMenu(menuId)
+                val batch = db.batch()
+                recipes.forEach { r ->
+                    batch.set(
+                        col("recipes").document("${menuId}_${r.ingredientId}"),
+                        mapOf(
+                            "menuId" to menuId,
+                            "ingredientId" to r.ingredientId,
+                            "qtyPerPortion" to r.qtyPerPortion
+                        ),
+                        SetOptions.merge()
+                    )
+                }
+                batch.commit().await()
+            }
+            "PROMO_UPSERT" -> {
+                val promoId = str(payload, "promoId") ?: return null
+                val promo = dao.promoById(promoId) ?: return null
+                col("promos").document(promoId).set(
+                    mapOf(
+                        "name" to promo.name,
+                        "percentOff" to promo.percentOff,
+                        "fixedDiscount" to promo.fixedDiscount,
+                        "minOrder" to promo.minOrder,
+                        "active" to promo.active
+                    ),
+                    SetOptions.merge()
+                ).await()
+            }
+            "PROMO_DELETE" -> {
+                val promoId = str(payload, "promoId") ?: return null
+                col("promos").document(promoId).delete().await()
+            }
             else -> { /* kind tak dikenal: anggap sukses agar antrean tidak macet */ }
         }
         return null

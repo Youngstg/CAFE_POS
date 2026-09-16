@@ -9,6 +9,7 @@ Semua di-scope: `/tenants/{tenantId}/outlets/{outletId}/{collection}/{doc}`.
 - `ingredients/{ingId}`: `{ name, currentStock, maxCapacity, unit, isLow, isStopped, updatedAt }`
 - `menus/{menuId}`: `{ name, price, isAvailable, updatedAt }`
 - `recipes/{menuId}_{ingId}`: `{ menuId, ingredientId, qtyPerPortion }` (BOM)
+- `promos/{promoId}`: `{ name, percentOff, fixedDiscount, minOrder, active }`
 - `orders/{orderId}`: `{ status: QUEUED|COOKING|READY|PAID|CONFLICT_NEED_REVIEW, items[], total, createdAt, deviceId }`
 - `shifts/{shiftId}`: `{ openedBy, modalAwal, total, closedAt, selisih, pendingSync }`
 - `suppliers/{supId}`: `{ name, phone, address }`

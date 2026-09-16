@@ -3,7 +3,9 @@ package com.coffeeos.erp.feature.cashier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.coffeeos.erp.core.data.local.MenuEntity
+import com.coffeeos.erp.core.data.local.PromoEntity
 import com.coffeeos.erp.core.data.repo.CartLine
+import com.coffeeos.erp.core.data.repo.MenuRepository
 import com.coffeeos.erp.core.data.repo.OrderRepository
 import com.coffeeos.erp.core.data.repo.ShiftRepository
 import com.coffeeos.erp.core.domain.order.OrderTotals
@@ -25,6 +27,7 @@ class CashierViewModel @Inject constructor(
     private val shifts: ShiftRepository,
     private val printer: PrinterRepository,
     private val sync: SyncTrigger,
+    private val catalog: MenuRepository,
 ) : ViewModel() {
 
     data class UiState(
@@ -37,6 +40,15 @@ class CashierViewModel @Inject constructor(
 
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui
+
+    private val _promo = MutableStateFlow<PromoEntity?>(null)
+    val selectedPromo: StateFlow<PromoEntity?> = _promo
+
+    fun promos(outletId: String): StateFlow<List<PromoEntity>> =
+        catalog.observePromos(outletId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun selectPromo(promo: PromoEntity?) { _promo.value = promo }
 
     fun menus(outletId: String): StateFlow<List<MenuEntity>> =
         orders.observeMenus(outletId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -76,8 +88,11 @@ class CashierViewModel @Inject constructor(
                     _ui.value = _ui.value.copy(busy = false, message = "Buka shift dulu sebelum jualan")
                     return@launch
                 }
-                val orderId = orders.checkout(outletId, cart)
-                val totals = OrderTotals.compute(cart.map { ReceiptItem(it.name, it.variant, it.qty, it.unitPrice) })
+                val orderId = orders.checkout(outletId, cart, _promo.value?.toPromo())
+                val totals = OrderTotals.compute(
+                    cart.map { ReceiptItem(it.name, it.variant, it.qty, it.unitPrice) },
+                    _promo.value?.toPromo()
+                )
                 val receipt = Receipt(
                     "CoffeeOS Demo", "Outlet 1", orderId, cashierName,
                     cart.map { ReceiptItem(it.name, it.variant, it.qty, it.unitPrice) },

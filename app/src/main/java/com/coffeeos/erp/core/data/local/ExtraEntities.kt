@@ -42,3 +42,22 @@ data class PurchaseOrderEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val pendingSync: Boolean = true,
 )
+
+/** Promo sederhana: persen dan/atau potongan tetap dengan minimal order. */
+@Entity(tableName = "promos")
+data class PromoEntity(
+    @PrimaryKey val id: String,
+    val outletId: String,
+    val name: String,
+    val percentOff: Int = 0,
+    val fixedDiscount: Long = 0,
+    val minOrder: Long = 0,
+    val active: Boolean = true,
+    val pendingSync: Boolean = true,
+) {
+    fun toPromo() = com.coffeeos.erp.core.domain.order.OrderTotals.Promo(
+        percentOff = percentOff,
+        fixedDiscount = fixedDiscount,
+        minOrder = minOrder
+    )
+}

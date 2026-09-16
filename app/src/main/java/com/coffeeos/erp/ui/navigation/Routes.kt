@@ -9,4 +9,5 @@ object Routes {
     const val OWNER = "owner"
     const val SHIFT = "shift"
     const val SUPPLY = "supply"
+    const val MENU = "menu"
 }

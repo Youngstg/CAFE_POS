@@ -13,20 +13,21 @@ MVP-0 → MVP-4 selesai di level kode (belum dibuka di Android Studio — env ta
 | Modul | Status |
 |---|---|
 | Auth | ✅ Email Firebase (Custom Claims role/tenant) + PIN cepat offline (hash) + demo |
-| Kasir (checkout deduct BOM, validasi STOP, struk Fake PDF, PAID) | ✅ |
+| Kasir (checkout deduct BOM, validasi STOP, pilih promo, struk Fake PDF, PAID) | ✅ |
 | Shift (buka modal, tutup rekonsiliasi, blokir saat pending sync) | ✅ |
 | Kitchen Display (antrean Room + tombol Masak/Siap + antrean sync) | ✅ |
-| Inventory (10%/2% + hysteresis, opname, terima PO, low-stock) | ✅ |
+| Inventory (10%/2% + hysteresis, opname, terima PO, edit kapasitas, low-stock) | ✅ |
+| Katalog (CRUD menu + resep BOM + promo, proteksi hapus bahan terpakai) | ✅ |
 | Supplier + PO (DRAFT→APPROVED→RECEIVED, anti-ganda via poId) | ✅ |
 | Owner (dashboard, approve PO, layar Konflik refund/paksa) | ✅ |
 | Printer | ✅ Fake PDF (interface siap untuk ESC/POS Bluetooth) |
-| Firebase Auth/Firestore/FCM realtime penuh | ✅ SyncWorker FIFO + transaction (ORDER/STOCK), FCM skeleton, Auth Firebase menyusul |
-| Realtime listener Firestore (KDS live antar HP) | ✅ RealtimeSync 5 koleksi + InboundPolicy ter-test |
+| Firebase Auth/Firestore/FCM | ✅ Transaction + realtime 8 koleksi + notifikasi tampil (ORDER/STOCK/PO) |
+| Build | ✅ Icon adaptif + proguard (minSdk 26, `applicationId com.cafe.pos`) |
 
 Verifikasi tanpa JDK: `python tools/verify_stock_rules.py` (10/10) +
 `python tools/verify_mvp.py` (15/15) + `python tools/verify_sync.py` (9/9) +
-`python tools/verify_inbound.py` (14/14) + `python tools/verify_auth.py` (17/17) —
-cermin Python dari domain + sync Kotlin.
+`python tools/verify_inbound.py` (15/15) + `python tools/verify_auth.py` (20/20) +
+`python tools/verify_catalog.py` (22/22) — cermin Python dari domain + sync Kotlin.
 Setup login Firebase: `docs/firebase-auth.md` + `node tools/set-claims.js`.
 Test JVM mirror: `StockRulesTest`, `ShiftCalculationTest`, `OrderTotalsTest`,
 `PoCalculationTest`, `ConflictPolicyTest` → `./gradlew :app:testDebugUnitTest`.

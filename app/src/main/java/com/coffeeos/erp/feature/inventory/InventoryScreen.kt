@@ -52,6 +52,9 @@ fun InventoryScreen(
                 var fisik by remember(ing.id, ing.currentStock) {
                     mutableStateOf(ing.currentStock.toString())
                 }
+                var kapasitas by remember(ing.id, ing.maxCapacity) {
+                    mutableStateOf(ing.maxCapacity?.toString() ?: "")
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -72,6 +75,10 @@ fun InventoryScreen(
                             },
                             style = MaterialTheme.typography.bodySmall
                         )
+                        Text(
+                            "Acuan 10%/2% dari kapasitas: ${ing.maxCapacity ?: "-"} ${ing.unit}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = fisik, onValueChange = { fisik = it },
@@ -81,6 +88,20 @@ fun InventoryScreen(
                             Button(onClick = {
                                 vm.opname(ing.id, fisik.toDoubleOrNull() ?: ing.currentStock, actorId)
                             }) { Text("Opname") }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = kapasitas, onValueChange = { kapasitas = it },
+                                label = { Text("Kapasitas max") }, modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            )
+                            Button(onClick = {
+                                vm.updateCapacity(
+                                    ing.id,
+                                    kapasitas.toDoubleOrNull() ?: ing.maxCapacity ?: 0.0,
+                                    ing.unit
+                                )
+                            }) { Text("Simpan") }
                         }
                     }
                 }

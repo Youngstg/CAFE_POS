@@ -23,6 +23,7 @@ import com.coffeeos.erp.feature.auth.AuthViewModel
 import com.coffeeos.erp.feature.cashier.CashierScreen
 import com.coffeeos.erp.feature.inventory.InventoryScreen
 import com.coffeeos.erp.feature.kitchen.KitchenScreen
+import com.coffeeos.erp.feature.menu.MenuScreen
 import com.coffeeos.erp.feature.owner.OwnerScreen
 import com.coffeeos.erp.feature.shift.ShiftScreen
 import com.coffeeos.erp.feature.supply.SupplyScreen
@@ -30,7 +31,7 @@ import com.coffeeos.erp.feature.supply.SupplyScreen
 /**
  * Navigasi role-based 1 APK:
  * - Kasir: Kasir + Shift. - Dapur: KDS. - Gudang: Inventory + Supply.
- * - Admin/Owner: Owner + Supply(approve) + Inventory + Shift.
+ * - Admin/Owner: Owner + Menu(katalog+promo) + Supply(approve) + Inventory + Shift.
  */
 @Composable
 fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
@@ -72,6 +73,7 @@ fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
                     canApprove = session.role == UserRole.OWNER || session.role == UserRole.ADMIN_OUTLET
                 )
             }
+            composable(Routes.MENU) { MenuScreen(outletId = outletId) }
         }
         RoleTabBar(
             role = session.role,
@@ -88,7 +90,10 @@ private fun RoleTabBar(role: UserRole, onNavigate: (String) -> Unit, onLogout: (
         UserRole.KITCHEN -> listOf("Dapur" to Routes.KITCHEN)
         UserRole.WAREHOUSE -> listOf("Stok" to Routes.INVENTORY, "Supply" to Routes.SUPPLY)
         UserRole.ADMIN_OUTLET, UserRole.OWNER ->
-            listOf("Owner" to Routes.OWNER, "Supply" to Routes.SUPPLY, "Stok" to Routes.INVENTORY, "Shift" to Routes.SHIFT)
+            listOf(
+                "Owner" to Routes.OWNER, "Menu" to Routes.MENU, "Supply" to Routes.SUPPLY,
+                "Stok" to Routes.INVENTORY, "Shift" to Routes.SHIFT
+            )
     }
     Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         tabs.forEach { (label, route) ->

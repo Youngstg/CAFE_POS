@@ -42,12 +42,14 @@ check("pakai shouldApplyVersioned", "shouldApplyVersioned" in rt)
 check("abaikan hasPendingWrites", "hasPendingWrites" in rt)
 check("abaikan REMOVED", "Type.REMOVED" in rt)
 check("hitung ulang menu turunan", "refreshMenusForIngredient" in rt)
-check("listener 5 koleksi",
-      all(c in rt for c in ['"orders"', '"ingredients"', '"purchaseOrders"', '"shifts"', '"suppliers"']))
+check("listener 8 koleksi",
+      all(c in rt for c in ['"orders"', '"ingredients"', '"purchaseOrders"', '"shifts"',
+                            '"suppliers"', '"menus"', '"recipes"', '"promos"']))
+check("menu tak timpa availability", "isAvailable" in rt and "turunan" in rt)
 
 # --- Konsistensi: semua koleksi listener ada di firestore.rules ---
 rules = (pathlib.Path(__file__).parent.parent / "firestore.rules").read_text()
 check("rules mencakup koleksi outlet", "outlets/{outletId}/{col}/{docId}" in rules)
 
-print(f"\n{14 - failed}/14 lolos")
+print(f"\n{15 - failed}/15 lolos")
 raise SystemExit(1 if failed else 0)

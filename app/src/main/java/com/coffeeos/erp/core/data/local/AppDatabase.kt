@@ -94,6 +94,37 @@ interface PosDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertRecipe(entity: RecipeEntity)
 
+    @Query("DELETE FROM recipes WHERE menuId = :menuId AND ingredientId = :ingredientId")
+    suspend fun deleteRecipe(menuId: String, ingredientId: String)
+
+    @Query("DELETE FROM recipes WHERE menuId = :menuId")
+    suspend fun deleteRecipesForMenu(menuId: String)
+
+    @Query("SELECT COUNT(*) FROM recipes WHERE ingredientId = :ingredientId")
+    suspend fun countRecipesUsing(ingredientId: String): Int
+
+    @Query("DELETE FROM menus WHERE id = :menuId")
+    suspend fun deleteMenu(menuId: String)
+
+    @Query("DELETE FROM ingredients WHERE id = :ingredientId")
+    suspend fun deleteIngredient(ingredientId: String)
+
+    // ---- Promo ----
+    @Query("SELECT * FROM promos WHERE outletId = :outletId ORDER BY minOrder ASC")
+    fun observePromos(outletId: String): Flow<List<PromoEntity>>
+
+    @Query("SELECT * FROM promos WHERE outletId = :outletId AND active = 1")
+    suspend fun listActivePromos(outletId: String): List<PromoEntity>
+
+    @Query("SELECT * FROM promos WHERE id = :id LIMIT 1")
+    suspend fun promoById(id: String): PromoEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertPromo(entity: PromoEntity)
+
+    @Query("DELETE FROM promos WHERE id = :id")
+    suspend fun deletePromo(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertOrder(entity: OrderEntity)
 
@@ -178,8 +209,8 @@ interface PosDao {
 }
 
 @Database(
-    entities = [IngredientEntity::class, MenuEntity::class, RecipeEntity::class, OrderEntity::class, PendingMutation::class, ShiftEntity::class, SupplierEntity::class, PurchaseOrderEntity::class],
-    version = 2,
+    entities = [IngredientEntity::class, MenuEntity::class, RecipeEntity::class, OrderEntity::class, PendingMutation::class, ShiftEntity::class, SupplierEntity::class, PurchaseOrderEntity::class, PromoEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -71,6 +71,7 @@ fun CashierScreen(
             }
         }
         Text("Keranjang (${ui.cart.sumOf { it.qty }} item)", style = MaterialTheme.typography.titleMedium)
+        PromoPicker(outletId = outletId, vm = vm)
         Text("Total Rp${ui.cart.sumOf { it.qty * it.unitPrice }}")
         ui.message?.let { Text(it) }
         ui.lastReceiptPath?.let { Text("Struk fake: $it", style = MaterialTheme.typography.bodySmall) }
@@ -80,6 +81,28 @@ fun CashierScreen(
                 onClick = { vm.pay(outletId, cashierName, "TUNAI") },
                 enabled = ui.cart.isNotEmpty() && !ui.busy, modifier = Modifier.fillMaxWidth()
             ) { Text(if (ui.busy) "Proses..." else "Bayar Tunai") }
+        }
+    }
+}
+
+/** Pilih 1 promo aktif (atau tanpa promo) sebelum bayar. */
+@Composable
+private fun PromoPicker(outletId: String, vm: CashierViewModel) {
+    val promos by vm.promos(outletId).collectAsState()
+    val selected by vm.selectedPromo.collectAsState()
+    val active = promos.filter { it.active }
+    if (active.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Promo:", style = MaterialTheme.typography.bodyMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            TextButton(onClick = { vm.selectPromo(null) }) {
+                Text(if (selected == null) "• Tanpa promo" else "Tanpa promo")
+            }
+            active.forEach { promo ->
+                TextButton(onClick = { vm.selectPromo(promo) }) {
+                    Text(if (selected?.id == promo.id) "• ${promo.name}" else promo.name)
+                }
+            }
         }
     }
 }
