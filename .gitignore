@@ -19,6 +19,10 @@ app/google-services.json
 *.keystore
 keystore.properties
 
+# Service account key Firebase Admin — SANGAT RAHASIA, jangan commit
+**/serviceAccount*.json
+**/*-key.json
+
 # ========================
 # Kotlin / IDE
 # ========================

@@ -13,7 +13,9 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.coffeeos.erp"
+        // HARUS sama dengan package_name di google-services.json (project cafepos-b3cb8).
+        // Namespace Kotlin sengaja tetap com.coffeeos.erp (boleh beda, tanpa pindah file).
+        applicationId = "com.cafe.pos"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

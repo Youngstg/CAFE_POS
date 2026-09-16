@@ -48,5 +48,15 @@ check("rules pakai token claims", "token.role" in rules and "token.tenantId" in 
 tools = pathlib.Path(__file__).parent.parent / "tools/set-claims.js"
 check("script set-claims ada", tools.exists() and "setCustomUserClaims" in tools.read_text())
 
-print(f"\n{17 - failed}/17 lolos")
+prov = pathlib.Path(__file__).parent.parent / "tools/provision.js"
+prov_src = prov.read_text() if prov.exists() else ""
+check("script provision ada + idempoten",
+      prov.exists() and "getUserByEmail" in prov_src and "createUser" in prov_src
+      and "setCustomUserClaims" in prov_src)
+check("provision tanpa RTDB", "databaseURL" not in prov_src)
+
+gi = (pathlib.Path(__file__).parent.parent / ".gitignore").read_text()
+check("service account di-gitignore", "serviceAccount" in gi)
+
+print(f"\n{20 - failed}/20 lolos")
 raise SystemExit(1 if failed else 0)

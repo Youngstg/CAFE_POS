@@ -1,6 +1,6 @@
 # Placeholder — JANGAN commit file asli.
 # 1. Buat project di Firebase Console
-# 2. Download google-services.json untuk applicationId com.coffeeos.erp
+# 2. Download google-services.json untuk applicationId com.cafe.pos
 # 3. Taruh di app/google-services.json (sudah di .gitignore)
 {
   "project_info": {
@@ -12,7 +12,7 @@
     {
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
-        "android_client_info": { "package_name": "com.coffeeos.erp" }
+        "android_client_info": { "package_name": "com.cafe.pos" }
       },
       "api_key": [{ "current_key": "GANTI_API_KEY" }]
     }

@@ -9,20 +9,33 @@ Login 3 jalur (lihat `AuthRepository`):
    (hash SHA-256 `uid:pin` di DataStore). Masuk berikutnya cukup PIN, tanpa internet.
 3. **Demo (evaluator tanpa Firebase):** `owner/admin/kasir/dapur/gudang`, PIN `123456`.
 
-## Setup Firebase (sekali)
+## Setup Firebase (sekali, ±10 menit — harus manusia, tidak bisa otomatis)
 
-1. Firebase Console → buat project → Authentication → aktifkan provider **Email/Password**.
-2. Buat user (satu per staff): Authentication → Users → Add user.
-3. Service account: Project settings → Service accounts → Generate key →
-   simpan sebagai `serviceAccount.json` (JANGAN commit).
-4. Set claims per user:
+> Service account key & user hanya bisa dibuat pemilik project via Console.
+> Setelah itu semua otomatis via 1 perintah.
+
+1. Console → project `cafepos-b3cb8` → **Authentication** → Sign-in method →
+   aktifkan **Email/Password**.
+2. Console → **Firestore Database** → tab **Rules** → ganti SEMUA isi
+   (saat ini `allow read, write: if false`) dengan isi file `firestore.rules`
+   di repo ini → **Publish**.
+3. Console → Project settings → Service accounts → **Generate new private key** →
+   simpan sebagai `serviceAccountKey.json` di folder `tools/`
+   (**JANGAN commit** — sudah di `.gitignore`).
+4. Provisioning sekali-jalan (bikin 5 user + claims, boleh diulang):
    ```bash
-   npm i -g firebase-admin   # atau: npm i firebase-admin di tools/
-   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node tools/set-claims.js kasir@tokomu.com CASHIER tenant-1 outlet-1 "Kasir 1"
+   cd tools && npm i firebase-admin
+   cd .. && node tools/provision.js ./tools/serviceAccountKey.json "Cafe1234!" tenant-1 outlet-1
    ```
-5. Android: `google-services.json` dari Console → `app/google-services.json`
-   (lihat `app/google-services.json.example`).
-6. User login ulang di HP agar token membawa claims baru.
+   Hasil: `owner/admin/kasir/dapur/gudang @cafepos.local` + claims sesuai peran.
+   Untuk 1 user saja: `tools/set-claims.js`.
+5. Android: `app/google-services.json` sudah cocok (paket `com.cafe.pos` =
+   `applicationId`). Tidak perlu download ulang kecuali ganti project.
+6. Login di HP tab **Email**, misal `kasir@cafepos.local` / `Cafe1234!`.
+
+CATATAN: snippet `databaseURL: ...firebasedatabase.app` dari Firebase boleh
+diabaikan — itu Realtime Database, kita memakai **Firestore** (Auth Admin SDK
+tidak butuh databaseURL).
 
 ## Kenapa Custom Claims (bukan koleksi users)?
 
