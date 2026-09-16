@@ -8,11 +8,15 @@ import com.coffeeos.erp.core.domain.stock.evaluateIngredient
 import com.coffeeos.erp.core.domain.stock.shouldClearWarning
 import com.coffeeos.erp.core.domain.stock.shouldReenable
 import com.coffeeos.erp.core.domain.supply.PoCalculation
+import com.coffeeos.erp.core.sync.SyncTrigger
 import java.util.UUID
 import javax.inject.Inject
 
 /** Gudang: opname, adjust, terima PO (guard anti-ganda), daftar low-stock. */
-class InventoryRepository @Inject constructor(private val dao: PosDao) {
+class InventoryRepository @Inject constructor(
+    private val dao: PosDao,
+    private val sync: SyncTrigger,
+) {
 
     fun observeIngredients(outletId: String) = dao.observeIngredients(outletId)
 
@@ -24,6 +28,7 @@ class InventoryRepository @Inject constructor(private val dao: PosDao) {
         require(physicalStock >= 0) { "Stok fisik tidak valid" }
         val e = dao.ingredientById(ingredientId) ?: throw IllegalArgumentException("Bahan tidak ada")
         applyStock(e.id, physicalStock, "OPNAME", actorId, e)
+        sync.request()
     }
 
     /** Terima PO: guard canReceive ( APPROVED + belum pernah diterima). */
@@ -44,6 +49,7 @@ class InventoryRepository @Inject constructor(private val dao: PosDao) {
         }
         dao.upsertPo(po.copy(status = "RECEIVED", pendingSync = true))
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "PO_RECEIVE", """{"poId":"$poId"}"""))
+        sync.request()
     }
 
     private suspend fun applyStock(

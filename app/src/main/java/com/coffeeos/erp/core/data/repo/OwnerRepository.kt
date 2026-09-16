@@ -2,11 +2,15 @@ package com.coffeeos.erp.core.data.repo
 
 import com.coffeeos.erp.core.data.local.PendingMutation
 import com.coffeeos.erp.core.data.local.PosDao
+import com.coffeeos.erp.core.sync.SyncTrigger
 import java.util.UUID
 import javax.inject.Inject
 
 /** Owner: ringkasan + approve PO + selesaikan konflik (opsi B semi-manual). */
-class OwnerRepository @Inject constructor(private val dao: PosDao) {
+class OwnerRepository @Inject constructor(
+    private val dao: PosDao,
+    private val sync: SyncTrigger,
+) {
 
     data class Dashboard(
         val revenuePaid: Long,
@@ -50,5 +54,6 @@ class OwnerRepository @Inject constructor(private val dao: PosDao) {
                 """{"orderId":"$orderId","refund":$refund}"""
             )
         )
+        sync.request()
     }
 }

@@ -103,6 +103,9 @@ interface PosDao {
     @Query("DELETE FROM pending_mutations WHERE mutationId = :id")
     suspend fun dequeue(id: String)
 
+    @Query("UPDATE pending_mutations SET retryCount = retryCount + 1 WHERE mutationId = :id")
+    suspend fun bumpRetry(id: String)
+
     @Query("SELECT COUNT(*) FROM pending_mutations")
     suspend fun pendingCount(): Int
 
@@ -153,6 +156,12 @@ interface PosDao {
 
     @Query("SELECT * FROM purchase_orders WHERE id = :id LIMIT 1")
     suspend fun poById(id: String): PurchaseOrderEntity?
+
+    @Query("SELECT * FROM shifts WHERE id = :id LIMIT 1")
+    suspend fun shiftById(id: String): ShiftEntity?
+
+    @Query("SELECT * FROM suppliers WHERE id = :id LIMIT 1")
+    suspend fun supplierById(id: String): SupplierEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertPo(entity: PurchaseOrderEntity)

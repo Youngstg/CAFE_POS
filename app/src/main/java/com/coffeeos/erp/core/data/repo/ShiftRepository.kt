@@ -4,6 +4,7 @@ import com.coffeeos.erp.core.data.local.PendingMutation
 import com.coffeeos.erp.core.data.local.PosDao
 import com.coffeeos.erp.core.data.local.ShiftEntity
 import com.coffeeos.erp.core.domain.shift.ShiftCalculation
+import com.coffeeos.erp.core.sync.SyncTrigger
 import java.util.UUID
 import javax.inject.Inject
 
@@ -11,7 +12,10 @@ class BlockedByPendingSyncException(val pending: Int) :
     IllegalStateException("Masih ada $pending mutasi belum tersinkron. Sync dulu sebelum tutup shift.")
 
 /** Shift kasir: buka (modal) -> akumulasi -> tutup (rekonsiliasi, diblokir jika antrean sync > 0). */
-class ShiftRepository @Inject constructor(private val dao: PosDao) {
+class ShiftRepository @Inject constructor(
+    private val dao: PosDao,
+    private val sync: SyncTrigger,
+) {
 
     fun observeShifts(outletId: String) = dao.observeShifts(outletId)
     suspend fun activeShift(outletId: String) = dao.activeShift(outletId)
@@ -23,6 +27,7 @@ class ShiftRepository @Inject constructor(private val dao: PosDao) {
         val id = "S-" + UUID.randomUUID().toString().take(8).uppercase()
         dao.upsertShift(ShiftEntity(id, outletId, openedBy, openedByName, modalAwal))
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "SHIFT_OPEN", """{"shiftId":"$id"}"""))
+        sync.request()
         return id
     }
 
@@ -45,6 +50,7 @@ class ShiftRepository @Inject constructor(private val dao: PosDao) {
         dao.enqueue(
             PendingMutation(UUID.randomUUID().toString(), "SHIFT_CLOSE", """{"shiftId":"${shift.id}"}""")
         )
+        sync.request()
         return result
     }
 }

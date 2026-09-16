@@ -5,11 +5,15 @@ import com.coffeeos.erp.core.data.local.PosDao
 import com.coffeeos.erp.core.data.local.PurchaseOrderEntity
 import com.coffeeos.erp.core.data.local.SupplierEntity
 import com.coffeeos.erp.core.domain.supply.PoCalculation
+import com.coffeeos.erp.core.sync.SyncTrigger
 import java.util.UUID
 import javax.inject.Inject
 
 /** Supplier + Purchase Order: DRAFT (gudang) -> APPROVED (owner) -> RECEIVED (gudang). */
-class SupplyRepository @Inject constructor(private val dao: PosDao) {
+class SupplyRepository @Inject constructor(
+    private val dao: PosDao,
+    private val sync: SyncTrigger,
+) {
 
     fun observeSuppliers(outletId: String) = dao.observeSuppliers(outletId)
     fun observePos(outletId: String) = dao.observePos(outletId)
@@ -19,6 +23,7 @@ class SupplyRepository @Inject constructor(private val dao: PosDao) {
         val id = "SUP-" + UUID.randomUUID().toString().take(6).uppercase()
         dao.upsertSupplier(SupplierEntity(id, outletId, name.trim(), phone.trim(), address.trim()))
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "SUPPLIER_UPSERT", """{"supplierId":"$id"}"""))
+        sync.request()
         return id
     }
 
@@ -38,6 +43,7 @@ class SupplyRepository @Inject constructor(private val dao: PosDao) {
             )
         )
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "PO_CREATE", """{"poId":"$id"}"""))
+        sync.request()
         return id
     }
 
@@ -46,5 +52,6 @@ class SupplyRepository @Inject constructor(private val dao: PosDao) {
         if (po.status != "DRAFT") throw IllegalStateException("Hanya DRAFT yang bisa di-approve")
         dao.upsertPo(po.copy(status = "APPROVED", pendingSync = true))
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "PO_APPROVE", """{"poId":"$poId"}"""))
+        sync.request()
     }
 }

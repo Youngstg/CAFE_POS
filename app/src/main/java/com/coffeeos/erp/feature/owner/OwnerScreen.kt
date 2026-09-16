@@ -35,6 +35,10 @@ fun OwnerScreen(outletId: String, vm: OwnerViewModel = hiltViewModel()) {
             Text("Bahan warning: ${d.lowCount} • STOP: ${d.stoppedCount}")
             Text("Konflik: ${d.conflictCount} • Pending sync: ${d.pendingSync}")
             Text("Shift aktif: ${d.activeShiftId ?: "-"}")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { vm.syncNow(outletId) }) { Text("Sync sekarang") }
+                Button(onClick = { vm.load(outletId) }) { Text("Refresh") }
+            }
         }
         msg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Text("Konflik butuh keputusan (${conflicts.size})", style = MaterialTheme.typography.titleMedium)

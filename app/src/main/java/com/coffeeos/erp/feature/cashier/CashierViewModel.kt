@@ -9,6 +9,7 @@ import com.coffeeos.erp.core.data.repo.ShiftRepository
 import com.coffeeos.erp.core.domain.order.OrderTotals
 import com.coffeeos.erp.core.domain.order.Receipt
 import com.coffeeos.erp.core.domain.order.ReceiptItem
+import com.coffeeos.erp.core.sync.SyncTrigger
 import com.coffeeos.erp.printing.PrinterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ class CashierViewModel @Inject constructor(
     private val orders: OrderRepository,
     private val shifts: ShiftRepository,
     private val printer: PrinterRepository,
+    private val sync: SyncTrigger,
 ) : ViewModel() {
 
     data class UiState(
@@ -41,6 +43,12 @@ class CashierViewModel @Inject constructor(
 
     fun refreshPending() {
         viewModelScope.launch { _ui.value = _ui.value.copy(pendingSync = orders.pendingCount()) }
+    }
+
+    /** Tombol "Sync sekarang" — picu worker di luar jadwal otomatis. */
+    fun syncNow() {
+        sync.request()
+        refreshPending()
     }
 
     fun addToCart(menu: MenuEntity) {

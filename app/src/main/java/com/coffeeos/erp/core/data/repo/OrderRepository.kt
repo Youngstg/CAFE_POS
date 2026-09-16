@@ -4,7 +4,7 @@ import com.coffeeos.erp.core.data.local.OrderEntity
 import com.coffeeos.erp.core.data.local.PendingMutation
 import com.coffeeos.erp.core.data.local.PosDao
 import com.coffeeos.erp.core.domain.order.OrderTotals
-import com.coffeeos.erp.core.domain.order.ReceiptItem
+import com.coffeeos.erp.core.sync.SyncTriggerimport com.coffeeos.erp.core.domain.order.ReceiptItem
 import com.coffeeos.erp.core.domain.stock.IngredientStock
 import com.coffeeos.erp.core.domain.stock.RecipeRequirement
 import com.coffeeos.erp.core.domain.stock.StockLevel
@@ -19,7 +19,10 @@ data class CartLine(val menuId: String, val name: String, val variant: String?, 
  * Kasir offline-first: validasi -> deduct Room -> enqueue sync.
  * Firestore transaction final (anti-oversell) jalan di SyncWorker saat online.
  */
-class OrderRepository @Inject constructor(private val dao: PosDao) {
+class OrderRepository @Inject constructor(
+    private val dao: PosDao,
+    private val sync: SyncTrigger,
+) {
 
     fun observeMenus(outletId: String) = dao.observeMenus(outletId)
     fun observeOrders(outletId: String) = dao.observeOrders(outletId)
@@ -83,9 +86,18 @@ class OrderRepository @Inject constructor(private val dao: PosDao) {
 
         refreshMenus(outletId)
         dao.upsertOrder(OrderEntity(orderId, outletId, "QUEUED", totals.total, pendingSync = true))
+        // Payload membawa needs (BOM x qty) agar SyncWorker bisa verifikasi stok
+        // di Firestore transaction tanpa baca Room lagi.
+        val needsJson = needByIngredient.entries.joinToString(",") { (id, qty) ->
+            """{"ingredientId":"$id","qty":$qty}"""
+        }
         dao.enqueue(
-            PendingMutation(UUID.randomUUID().toString(), "ORDER_UPSERT", """{"orderId":"$orderId"}""")
+            PendingMutation(
+                UUID.randomUUID().toString(), "ORDER_UPSERT",
+                """{"orderId":"$orderId","total":${totals.total},"needs":[$needsJson]}"""
+            )
         )
+        sync.request()
         return orderId
     }
 
@@ -94,6 +106,7 @@ class OrderRepository @Inject constructor(private val dao: PosDao) {
         dao.enqueue(
             PendingMutation(UUID.randomUUID().toString(), "ORDER_PAID", """{"orderId":"$orderId"}""")
         )
+        sync.request()
     }
 
     suspend fun updateKitchenStatus(orderId: String, status: String) {
@@ -105,6 +118,7 @@ class OrderRepository @Inject constructor(private val dao: PosDao) {
                 """{"orderId":"$orderId","status":"$status"}"""
             )
         )
+        sync.request()
     }
 
     private suspend fun refreshMenus(outletId: String) {

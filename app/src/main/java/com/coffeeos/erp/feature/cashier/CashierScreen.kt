@@ -35,7 +35,16 @@ fun CashierScreen(
 
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (ui.pendingSync > 0) {
-            Text("Offline • ${ui.pendingSync} menunggu sync", color = MaterialTheme.colorScheme.error)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Offline • ${ui.pendingSync} menunggu sync",
+                    color = MaterialTheme.colorScheme.error
+                )
+                TextButton(onClick = { vm.syncNow() }) { Text("Sync sekarang") }
+            }
         }
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(menus) { menu ->

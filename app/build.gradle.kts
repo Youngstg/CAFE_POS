@@ -56,8 +56,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
 
-    // Coroutines
+    // Coroutines (+ await() untuk Task Firebase)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")
@@ -74,6 +75,8 @@ dependencies {
 
     // WorkManager (background sync queue -> Firestore)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Firebase (sync + auth + push; offline persistence enabled in code)
     implementation(platform("com.google.firebase:firebase-bom:33.2.0"))

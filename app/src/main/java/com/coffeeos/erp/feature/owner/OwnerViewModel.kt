@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.coffeeos.erp.core.data.local.OrderEntity
 import com.coffeeos.erp.core.data.repo.OwnerRepository
+import com.coffeeos.erp.core.sync.SyncTrigger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,7 +14,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class OwnerViewModel @Inject constructor(private val repo: OwnerRepository) : ViewModel() {
+class OwnerViewModel @Inject constructor(
+    private val repo: OwnerRepository,
+    private val sync: SyncTrigger,
+) : ViewModel() {
 
     private val _dash = MutableStateFlow<OwnerRepository.Dashboard?>(null)
     val dashboard: StateFlow<OwnerRepository.Dashboard?> = _dash
@@ -30,6 +34,12 @@ class OwnerViewModel @Inject constructor(private val repo: OwnerRepository) : Vi
             try { _dash.value = repo.dashboard(outletId) }
             catch (e: Exception) { _msg.value = e.message }
         }
+    }
+
+    /** Picu worker + refresh angka pending di dashboard. */
+    fun syncNow(outletId: String) {
+        sync.request()
+        load(outletId)
     }
 
     fun resolve(orderId: String, refund: Boolean) {
