@@ -24,7 +24,7 @@ Login 3 jalur (lihat `AuthRepository`):
    (**JANGAN commit** — sudah di `.gitignore`).
 4. Provisioning sekali-jalan (bikin 5 user + claims, boleh diulang):
    ```bash
-   cd tools && npm i firebase-admin
+   cd tools && npm i firebase-admin@12   # v12 CommonJS; v13+ ESM-only
    cd .. && node tools/provision.js ./tools/serviceAccountKey.json "Cafe1234!" tenant-1 outlet-1
    ```
    Hasil: `owner/admin/kasir/dapur/gudang @cafepos.local` + claims sesuai peran.

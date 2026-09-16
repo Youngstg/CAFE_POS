@@ -3,7 +3,7 @@
  * Idempoten — aman dijalankan ulang (user ada -> password di-reset + claims di-set).
  *
  * Pakai:
- *   npm i firebase-admin
+ *   npm i firebase-admin@12   (v12 = CommonJS; v13+ ESM-only, tidak cocok)
  *   node tools/provision.js <serviceAccount.json> [password] [tenantId] [outletId]
  *
  * Contoh:

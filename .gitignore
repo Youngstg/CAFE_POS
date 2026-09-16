@@ -21,7 +21,11 @@ keystore.properties
 
 # Service account key Firebase Admin — SANGAT RAHASIA, jangan commit
 **/serviceAccount*.json
+**/*-firebase-adminsdk-*.json
 **/*-key.json
+
+# Node modules untuk tools/ provisioning
+tools/node_modules/
 
 # ========================
 # Kotlin / IDE
