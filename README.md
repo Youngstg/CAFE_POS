@@ -8,18 +8,26 @@ Spek konsep lama (RBAC, business flow, ERD): `docs/legacy-spec/`.
 
 ## Status
 
-MVP-0 scaffold selesai: navigasi role, entity Room, aturan stok 10%/2% + unit test,
-abstraksi printer (Fake PDF), schema Firestore + rules.
+MVP-0 → MVP-4 selesai di level kode (belum dibuka di Android Studio — env tanpa JDK):
 
 | Modul | Status |
 |---|---|
-| Auth + RBAC (PIN, Custom Claims) | ⏳ berikutnya (MVP-1) |
-| Kasir + Order + Shift | ⏳ MVP-1 |
-| Kitchen Display realtime | ⏳ MVP-2 |
-| Inventory (BOM deduct, 10%/2%) | ✅ domain + test |
-| Supplier + PO + Stock In | ⏳ MVP-3 (Room entity + Firestore col sudah disiapkan) |
-| Owner dashboard + layar Konflik | ⏳ MVP-4 |
-| Printer | ✅ Fake PDF (teks struk siap untuk ESC/POS asli) |
+| Auth PIN offline + RBAC + session DataStore + seed demo | ✅ |
+| Kasir (checkout deduct BOM, validasi STOP, struk Fake PDF, PAID) | ✅ |
+| Shift (buka modal, tutup rekonsiliasi, blokir saat pending sync) | ✅ |
+| Kitchen Display (antrean Room + tombol Masak/Siap + antrean sync) | ✅ |
+| Inventory (10%/2% + hysteresis, opname, terima PO, low-stock) | ✅ |
+| Supplier + PO (DRAFT→APPROVED→RECEIVED, anti-ganda via poId) | ✅ |
+| Owner (dashboard, approve PO, layar Konflik refund/paksa) | ✅ |
+| Printer | ✅ Fake PDF (interface siap untuk ESC/POS Bluetooth) |
+| Firebase Auth/Firestore/FCM realtime penuh | ⏳ skeleton (repo tulis Room+enqueue; transaction di SyncWorker) |
+
+Verifikasi tanpa JDK: `python tools/verify_stock_rules.py` (10/10) +
+`python tools/verify_mvp.py` (15/15) — cermin Python dari domain Kotlin.
+Test JVM mirror: `StockRulesTest`, `ShiftCalculationTest`, `OrderTotalsTest`,
+`PoCalculationTest`, `ConflictPolicyTest` → `./gradlew :app:testDebugUnitTest`.
+
+Akun demo (PIN semua `123456`): `owner / admin / kasir / dapur / gudang`.
 
 ## Struktur
 

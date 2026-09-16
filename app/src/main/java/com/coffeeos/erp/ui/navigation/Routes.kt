@@ -7,4 +7,6 @@ object Routes {
     const val KITCHEN = "kitchen"
     const val INVENTORY = "inventory"
     const val OWNER = "owner"
+    const val SHIFT = "shift"
+    const val SUPPLY = "supply"
 }

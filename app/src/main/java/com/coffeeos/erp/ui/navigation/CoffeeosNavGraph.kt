@@ -1,66 +1,99 @@
 package com.coffeeos.erp.ui.navigation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.coffeeos.erp.core.domain.auth.UserRole
+import com.coffeeos.erp.feature.auth.AuthScreen
+import com.coffeeos.erp.feature.auth.AuthViewModel
+import com.coffeeos.erp.feature.cashier.CashierScreen
+import com.coffeeos.erp.feature.inventory.InventoryScreen
+import com.coffeeos.erp.feature.kitchen.KitchenScreen
+import com.coffeeos.erp.feature.owner.OwnerScreen
+import com.coffeeos.erp.feature.shift.ShiftScreen
+import com.coffeeos.erp.feature.supply.SupplyScreen
 
 /**
- * Skeleton navigasi role-based.
- * TODO MVP-1: ganti [role] dengan hasil login Firebase (Custom Claims) dari Room/DataStore.
+ * Navigasi role-based 1 APK:
+ * - Kasir: Kasir + Shift. - Dapur: KDS. - Gudang: Inventory + Supply.
+ * - Admin/Owner: Owner + Supply(approve) + Inventory + Shift.
  */
 @Composable
-fun CoffeeosNavGraph() {
+fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
+    val authUi by authVm.ui.collectAsState()
+    val session = authUi.session
     val navController = rememberNavController()
-    var role by remember { mutableStateOf<UserRole?>(null) }
 
-    if (role == null) {
-        AuthGate(onLoggedIn = { loggedInRole ->
-            role = loggedInRole
-            navController.navigate(
-                when (loggedInRole) {
-                    UserRole.CASHIER -> Routes.CASHIER
-                    UserRole.KITCHEN -> Routes.KITCHEN
-                    UserRole.ADMIN_OUTLET, UserRole.OWNER -> Routes.OWNER
-                    UserRole.WAREHOUSE -> Routes.INVENTORY
-                }
-            ) { popUpTo(Routes.AUTH) { inclusive = true } }
+    if (session == null) {
+        AuthScreen(onLoggedIn = {
+            // session terisi via StateFlow -> recompose otomatis ke Home.
         })
         return
     }
 
-    NavHost(navController = navController, startDestination = Routes.AUTH) {
-        composable(Routes.AUTH) { /* diganti AuthGate di atas setelah login */ }
-        composable(Routes.CASHIER) { RolePlaceholder("Kasir — Terminal POS (offline-first)") }
-        composable(Routes.KITCHEN) { RolePlaceholder("Dapur — Kitchen Display realtime") }
-        composable(Routes.INVENTORY) { RolePlaceholder("Gudang — Stok, Opname, Terima PO") }
-        composable(Routes.OWNER) { RolePlaceholder("Owner — Dashboard + Approve PO + Konflik") }
+    val outletId = session.outletId
+    val home = when (session.role) {
+        UserRole.CASHIER -> Routes.CASHIER
+        UserRole.KITCHEN -> Routes.KITCHEN
+        UserRole.WAREHOUSE -> Routes.INVENTORY
+        UserRole.ADMIN_OUTLET, UserRole.OWNER -> Routes.OWNER
     }
-}
 
-@Composable
-private fun AuthGate(onLoggedIn: (UserRole) -> Unit) {
-    Column(Modifier.fillMaxSize().padding(24.dp)) {
-        Text("CoffeeOS ERP — pilih role untuk demo (ganti Firebase Auth di MVP-1)")
-        UserRole.entries.forEach { role ->
-            Button(onClick = { onLoggedIn(role) }) { Text(role.name) }
+    Column(Modifier.fillMaxSize()) {
+        NavHost(navController = navController, startDestination = home, modifier = Modifier.weight(1f)) {
+            composable(Routes.CASHIER) {
+                CashierScreen(outletId = outletId, cashierName = session.displayName)
+            }
+            composable(Routes.KITCHEN) { KitchenScreen(outletId = outletId) }
+            composable(Routes.INVENTORY) {
+                InventoryScreen(outletId = outletId, actorId = session.uid)
+            }
+            composable(Routes.OWNER) { OwnerScreen(outletId = outletId) }
+            composable(Routes.SHIFT) {
+                ShiftScreen(outletId = outletId, uid = session.uid, displayName = session.displayName)
+            }
+            composable(Routes.SUPPLY) {
+                SupplyScreen(
+                    outletId = outletId, actorId = session.uid,
+                    canApprove = session.role == UserRole.OWNER || session.role == UserRole.ADMIN_OUTLET
+                )
+            }
         }
+        RoleTabBar(
+            role = session.role,
+            onNavigate = { navController.navigate(it) { launchSingleTop = true } },
+            onLogout = { authVm.logout() }
+        )
     }
 }
 
 @Composable
-private fun RolePlaceholder(title: String) {
-    Column(Modifier.fillMaxSize().padding(24.dp)) { Text(title) }
+private fun RoleTabBar(role: UserRole, onNavigate: (String) -> Unit, onLogout: () -> Unit) {
+    val tabs = when (role) {
+        UserRole.CASHIER -> listOf("Kasir" to Routes.CASHIER, "Shift" to Routes.SHIFT)
+        UserRole.KITCHEN -> listOf("Dapur" to Routes.KITCHEN)
+        UserRole.WAREHOUSE -> listOf("Stok" to Routes.INVENTORY, "Supply" to Routes.SUPPLY)
+        UserRole.ADMIN_OUTLET, UserRole.OWNER ->
+            listOf("Owner" to Routes.OWNER, "Supply" to Routes.SUPPLY, "Stok" to Routes.INVENTORY, "Shift" to Routes.SHIFT)
+    }
+    Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        tabs.forEach { (label, route) ->
+            Button(onClick = { onNavigate(route) }, modifier = Modifier.fillMaxWidth()) { Text(label) }
+        }
+        TextButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Keluar") }
+    }
 }
