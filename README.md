@@ -1,141 +1,68 @@
-# ☕ CoffeeOS — Cafe POS Monorepo
+# CoffeeOS ERP — Android-Only Rewrite (Kotlin + Compose + Firebase)
 
-> Platform Point-of-Sale lengkap untuk kafe, dengan integrasi chatbot WhatsApp/Telegram bertenaga LLM.
+> ERP coffeeshop: **Kasir + Gudang + Owner + Stock + Supply** dalam 1 APK multi-role,
+> offline-first, printer Fake-PDF dulu (tanpa hardware).
 
-[![Backend CI](https://github.com/Youngstg/CAFE_POS/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Youngstg/CAFE_POS/actions/workflows/backend-ci.yml)
-[![Web CI](https://github.com/Youngstg/CAFE_POS/actions/workflows/web-ci.yml/badge.svg)](https://github.com/Youngstg/CAFE_POS/actions/workflows/web-ci.yml)
-[![Chatbot CI](https://github.com/Youngstg/CAFE_POS/actions/workflows/chatbot-gateway-ci.yml/badge.svg)](https://github.com/Youngstg/CAFE_POS/actions/workflows/chatbot-gateway-ci.yml)
+Branch arsip web monorepo lama: `archive/web-monorepo`.
+Spek konsep lama (RBAC, business flow, ERD): `docs/legacy-spec/`.
 
----
+## Status
 
-## 📁 Struktur Monorepo
+MVP-0 scaffold selesai: navigasi role, entity Room, aturan stok 10%/2% + unit test,
+abstraksi printer (Fake PDF), schema Firestore + rules.
+
+| Modul | Status |
+|---|---|
+| Auth + RBAC (PIN, Custom Claims) | ⏳ berikutnya (MVP-1) |
+| Kasir + Order + Shift | ⏳ MVP-1 |
+| Kitchen Display realtime | ⏳ MVP-2 |
+| Inventory (BOM deduct, 10%/2%) | ✅ domain + test |
+| Supplier + PO + Stock In | ⏳ MVP-3 (Room entity + Firestore col sudah disiapkan) |
+| Owner dashboard + layar Konflik | ⏳ MVP-4 |
+| Printer | ✅ Fake PDF (teks struk siap untuk ESC/POS asli) |
+
+## Struktur
 
 ```
-coffeeos/
-├── apps/
-│   ├── backend/           # Laravel 11 API — business logic utama
-│   ├── web/               # React + Vite — dashboard & customer-facing
-│   └── chatbot-gateway/   # Node.js TypeScript — WhatsApp & Telegram bot
-├── infra/
-│   ├── docker/            # Dockerfiles per service
-│   ├── nginx/             # Reverse proxy config
-│   ├── docker-compose.dev.yml   # Dev: MySQL
-│   └── docker-compose.prod.yml  # Prod: PostgreSQL
-├── docs/
-│   ├── architecture/      # System overview & ERD
-│   └── api/               # Postman collection
-└── .github/
-    └── workflows/         # CI/CD per service (path-filtered)
+settings.gradle.kts / build.gradle.kts / app/build.gradle.kts
+app/src/main/java/com/coffeeos/erp/
+  MainActivity.kt, CoffeeosApp.kt
+  ui/navigation/ (Routes, CoffeeosNavGraph — cabang per role)
+  ui/theme/
+  core/domain/auth/ (UserRole)
+  core/domain/stock/ (StockRules — WARNING 10% / STOP 2%)
+  core/domain/order/ (Receipt, ReceiptFormatter)
+  core/data/local/ (AppDatabase: ingredients, menus, recipes, orders, pending_mutations)
+  core/sync/ (SyncWorker via WorkManager)
+  printing/ (PrinterRepository, FakePdfPrinter)
+app/src/test/.../StockRulesTest.kt
+firestore.rules + docs/firestore-schema.md
+tools/verify_stock_rules.py (cermin Python, bisa jalan tanpa JDK)
 ```
 
----
+## Cara Jalan (butuh Android Studio, karena env saat ini tanpa JDK)
 
-## 🚀 Cara Menjalankan (Development)
+1. Install Android Studio (JDK + SDK + Gradle bundled).
+2. Copy `app/google-services.json.example` -> `app/google-services.json` isi dari Firebase Console.
+3. Buka folder repo ini di Android Studio -> Sync Gradle -> Run `app` di emulator (minSdk 26).
+4. Login demo: pilih role di layar awal (ganti Firebase Auth di MVP-1).
+5. Cetak struk fake: file tersimpan di cache app (`struk-<orderId>.txt`) — siap dibagikan.
 
-### Prasyarat
-- Docker & Docker Compose
-- PHP 8.3 + Composer (untuk backend lokal)
-- Node.js 20+ (untuk web & chatbot-gateway lokal)
-
-### 1. Clone & Setup
+Verifikasi logika stok tanpa Android Studio:
 
 ```bash
-git clone https://github.com/Youngstg/CAFE_POS.git
-cd CAFE_POS
+python tools/verify_stock_rules.py
 ```
 
-### 2. Setup Backend (Laravel)
+Unit test JVM (di Android Studio): `./gradlew :app:testDebugUnitTest`
 
-```bash
-cd apps/backend
-cp .env.example .env
-composer install
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
+## Aturan Stok (final v2)
 
-### 3. Setup Web (React)
+`percent = currentStock / maxCapacity * 100` — WARNING ≤10% (tetap jual + alert PO),
+STOP ≤2% (semua menu berbahan itu auto-mati). Nyala lagi ≥5%. Fallback absolut ≤5
+bila `maxCapacity` tidak diketahui. Detail: `docs/firestore-schema.md`.
 
-```bash
-cd apps/web
-cp .env.example .env
-npm install
-npm run dev
-```
+## Roadmap
 
-### 4. Setup Chatbot Gateway
-
-```bash
-cd apps/chatbot-gateway
-cp .env.example .env
-npm install
-npm run dev
-```
-
-### 5. Atau jalankan semua via Docker
-
-```bash
-docker compose -f infra/docker-compose.dev.yml up -d
-```
-
----
-
-## 🏗️ Arsitektur
-
-Lihat [docs/architecture/system-overview.md](docs/architecture/system-overview.md) untuk detail.
-
-```
-Customer / Staff
-     │
-     ├── Web Browser ──────────────► apps/web (React)
-     │                                    │
-     │                                    ▼
-     └── WhatsApp / Telegram ──► apps/chatbot-gateway (Node.js)
-                                          │
-                                          ▼
-                               apps/backend (Laravel API)
-                                          │
-                                          ▼
-                               MySQL (dev) / PostgreSQL (prod)
-```
-
----
-
-## 🔑 Fitur Utama
-
-| Fitur | Status |
-|-------|--------|
-| Multi-tenant POS | ✅ |
-| Manajemen Menu & Stok | ✅ |
-| Order & Kitchen Display | ✅ |
-| Laporan Keuangan | ✅ |
-| Manajemen Shift | ✅ |
-| Chatbot WhatsApp | 🚧 |
-| Chatbot Telegram | 🚧 |
-| RAG Knowledge Base | 🚧 |
-| RBAC (Owner/Cashier/Kitchen/Customer) | ✅ |
-
----
-
-## 📚 Dokumentasi
-
-- [System Overview](docs/architecture/system-overview.md)
-- [Business Flow](docs/architecture/business-flow.md)
-- [API Collection](docs/api/postman_collection.json)
-
----
-
-## 🤝 Kontribusi
-
-1. Fork repository ini
-2. Buat branch fitur: `git checkout -b feature/nama-fitur`
-3. Commit: `git commit -m "feat: tambah fitur X"`
-4. Push: `git push origin feature/nama-fitur`
-5. Buat Pull Request ke `main`
-
----
-
-## 📄 Lisensi
-
-MIT License — lihat [LICENSE](LICENSE) untuk detail.
+MVP-1 Auth+Kasir+Shift → MVP-2 KDS → MVP-3 Supplier/PO → MVP-4 Owner+Konflik →
+ganti FakePdfPrinter dengan BluetoothEscPosPrinter (interface sama, tanpa ubah kasir).

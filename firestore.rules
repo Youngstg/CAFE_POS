@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return request.auth.token.role; }
+    function sameTenant(tenantId) { return request.auth.token.tenantId == tenantId; }
+
+    // Semua data di-scope per tenant+outlet (multi-tenant seperti konsep lama).
+    match /tenants/{tenantId}/outlets/{outletId}/{col}/{docId} {
+      allow read: if signedIn() && sameTenant(tenantId);
+      // Tulis kritis (stok/PO/shift) dilewatkan transaction client + validasi ulang di sini.
+      // Kasir & dapur hanya boleh tulis orders; gudang tulis stock/PO; owner full.
+      allow write: if signedIn() && sameTenant(tenantId) && (
+        role() in ['owner', 'admin_outlet'] ||
+        (role() == 'cashier' && col == 'orders') ||
+        (role() == 'kitchen' && col == 'orders') ||
+        (role() == 'warehouse' && col in ['ingredients', 'purchaseOrders', 'stockMutations'])
+      );
+    }
+  }
+}
