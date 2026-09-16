@@ -82,6 +82,9 @@ interface PosDao {
     @Query("SELECT * FROM recipes WHERE menuId = :menuId")
     suspend fun recipesForMenu(menuId: String): List<RecipeEntity>
 
+    @Query("SELECT * FROM recipes WHERE ingredientId = :ingredientId")
+    suspend fun recipesForIngredient(ingredientId: String): List<RecipeEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertIngredient(entity: IngredientEntity)
 

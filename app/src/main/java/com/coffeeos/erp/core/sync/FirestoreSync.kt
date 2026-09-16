@@ -82,7 +82,14 @@ class FirestoreSync @Inject constructor(
                 val needs = PoJson.parse(payload).associate { it.first to it.second }
                 if (needs.isEmpty()) {
                     col("orders").document(orderId)
-                        .set(mapOf("status" to "QUEUED", "total" to total), SetOptions.merge()).await()
+                        .set(
+                            mapOf(
+                                "status" to "QUEUED",
+                                "total" to total,
+                                "createdAt" to FieldValue.serverTimestamp()
+                            ),
+                            SetOptions.merge()
+                        ).await()
                     return null
                 }
                 // Transaction mengembalikan true jika kalah (stok server kurang).
@@ -95,7 +102,11 @@ class FirestoreSync @Inject constructor(
                     if (isLoser) {
                         txn.set(
                             col("orders").document(orderId),
-                            mapOf("status" to "CONFLICT_NEED_REVIEW", "total" to total),
+                            mapOf(
+                                "status" to "CONFLICT_NEED_REVIEW",
+                                "total" to total,
+                                "createdAt" to FieldValue.serverTimestamp()
+                            ),
                             SetOptions.merge()
                         )
                     } else {
@@ -120,7 +131,11 @@ class FirestoreSync @Inject constructor(
                         }
                         txn.set(
                             col("orders").document(orderId),
-                            mapOf("status" to "QUEUED", "total" to total),
+                            mapOf(
+                                "status" to "QUEUED",
+                                "total" to total,
+                                "createdAt" to FieldValue.serverTimestamp()
+                            ),
                             SetOptions.merge()
                         )
                     }

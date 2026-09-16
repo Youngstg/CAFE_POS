@@ -28,3 +28,15 @@ Room = source of truth. Setiap tulis lokal enqueue `pending_mutations`
 (`mutationId` UUID). `SyncWorker` (WorkManager, `NetworkType.CONNECTED`,
 backoff exponential) mengirim FIFO. Konflik kalah -> order `CONFLICT_NEED_REVIEW`
 masuk layar Konflik Owner.
+
+## Sync inbound (realtime Firestore -> Room)
+
+`RealtimeSync` pasang 5 listener (orders, ingredients, purchaseOrders, shifts,
+suppliers) saat login, dilepas saat logout. Aturan (`InboundPolicy`):
+- Gema tulisan sendiri (`hasPendingWrites`) diabaikan.
+- Baris lokal `pendingSync=true` menang (tidak ditimpa server).
+- Ingredient last-write-wins via `updatedAt`; menu terkait dihitung ulang
+  (`isAvailable` turunan, tidak ditimpa mentah).
+- `REMOVED` server diabaikan (arsip lokal dipertahankan).
+- `createdAt`/`updatedAt` serverTimestamp ditulis oleh `FirestoreSync` agar
+  KDS terurut antar HP.
