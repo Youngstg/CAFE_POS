@@ -5,7 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.firestoreSettings
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

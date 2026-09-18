@@ -4,7 +4,7 @@ import com.coffeeos.erp.core.data.session.SessionManager
 import com.coffeeos.erp.core.domain.auth.PinHash
 import com.coffeeos.erp.core.domain.auth.UserRole
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
