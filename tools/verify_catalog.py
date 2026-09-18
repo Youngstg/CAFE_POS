@@ -69,8 +69,13 @@ check("layar katalog ada",
 inv = (app / "feature/inventory/InventoryScreen.kt").read_text()
 check("gudang edit kapasitas", "updateCapacity" in inv and "Kapasitas max" in inv)
 
-cash = (app / "feature/cashier/CashierScreen.kt").read_text()
+cash = (app / "feature/cashier/CashierScreen.kt").read_text(encoding="utf-8")
 check("kasir pilih promo", "PromoPicker" in cash and "selectPromo" in cash)
+check("kasir horizontal 2 kolom (design 8.2)",
+      all(k in cash for k in ("ORIENTATION_LANDSCAPE", "MenuGrid", "CartPanel",
+                              "LazyVerticalGrid", "GridCells.Adaptive"))
+      and "CartLineRow" in cash and "decreaseFromCart" in
+      (app / "feature/cashier/CashierViewModel.kt").read_text(encoding="utf-8"))
 
 fcm = (app / "core/notify/CoffeeosMessagingService.kt").read_text()
 check("FCM tampil beneran",
@@ -85,5 +90,5 @@ rules = (pathlib.Path(__file__).parent.parent / "firestore.rules").read_text()
 check("rules izinkan tulis katalog sesuai peran",
       "warehouse" in rules and "ingredients" in rules)
 
-print(f"\n{22 - failed}/22 lolos")
+print(f"\n{23 - failed}/23 lolos")
 raise SystemExit(1 if failed else 0)

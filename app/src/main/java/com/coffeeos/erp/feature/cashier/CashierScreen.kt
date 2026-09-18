@@ -1,12 +1,18 @@
 package com.coffeeos.erp.feature.cashier
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -18,11 +24,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.coffeeos.erp.core.data.local.MenuEntity
+import com.coffeeos.erp.core.data.repo.CartLine
 
-/** Terminal kasir: grid menu (mati saat stok STOP) + keranjang + bayar + struk fake. */
+/**
+ * Terminal kasir sesuai design.md 8.2:
+ * - Landscape/tablet: 2 kolom — kiri grid Menu Card, kanan panel Keranjang persisten.
+ * - Portrait/ponsel: stack vertikal (menu di atas, keranjang di bawah).
+ * Menu STOP tetap tampil non-aktif (kasir tahu kenapa tak bisa jual).
+ */
 @Composable
 fun CashierScreen(
     outletId: String,
@@ -31,13 +46,15 @@ fun CashierScreen(
 ) {
     val ui by vm.ui.collectAsState()
     val menus by vm.menus(outletId).collectAsState()
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     LaunchedEffect(outletId) { vm.refreshPending() }
 
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (ui.pendingSync > 0) {
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     "Offline • ${ui.pendingSync} menunggu sync",
@@ -46,42 +63,130 @@ fun CashierScreen(
                 TextButton(onClick = { vm.syncNow() }) { Text("Sync sekarang") }
             }
         }
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(menus) { menu ->
-                Card(
-                    enabled = menu.isAvailable,
-                    onClick = { vm.addToCart(menu) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (menu.isAvailable) MaterialTheme.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.errorContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text(menu.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                if (menu.isAvailable) "Rp${menu.price}" else "HABIS (stok ≤2%)",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        Text(if (menu.isAvailable) "＋ Tambah" else "✕")
-                    }
+        if (landscape) {
+            Row(
+                Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MenuGrid(
+                    menus = menus,
+                    onAdd = { vm.addToCart(it) },
+                    modifier = Modifier.weight(2f).fillMaxHeight()
+                )
+                CartPanel(
+                    outletId = outletId,
+                    cashierName = cashierName,
+                    vm = vm,
+                    modifier = Modifier.width(360.dp).fillMaxHeight()
+                )
+            }
+        } else {
+            MenuGrid(
+                menus = menus,
+                onAdd = { vm.addToCart(it) },
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            )
+            CartPanel(
+                outletId = outletId,
+                cashierName = cashierName,
+                vm = vm,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/** Grid Menu Card: tap besar, state habis overlay non-aktif. */
+@Composable
+private fun MenuGrid(
+    menus: List<MenuEntity>,
+    onAdd: (MenuEntity) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 140.dp),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(menus, key = { it.id }) { menu ->
+            Card(
+                enabled = menu.isAvailable,
+                onClick = { onAdd(menu) },
+                colors = CardDefaults.cardColors(
+                    containerColor = if (menu.isAvailable) MaterialTheme.colorScheme.surfaceVariant
+                    else MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text(menu.name, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (menu.isAvailable) "Rp${menu.price}" else "HABIS (stok ≤2%)",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        if (menu.isAvailable) "＋ Tambah" else "✕",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         }
-        Text("Keranjang (${ui.cart.sumOf { it.qty }} item)", style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+/** Panel keranjang persisten: stepper besar, slot promo, tombol Bayar terjangkau. */
+@Composable
+private fun CartPanel(
+    outletId: String,
+    cashierName: String,
+    vm: CashierViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val ui by vm.ui.collectAsState()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "Keranjang (${ui.cart.sumOf { it.qty }} item)",
+            style = MaterialTheme.typography.titleMedium
+        )
+        LazyColumn(
+            Modifier.weight(1f, fill = false),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            items(ui.cart, key = { it.menuId }) { line ->
+                CartLineRow(line = line, onMinus = { vm.decreaseFromCart(line.menuId) })
+            }
+        }
         PromoPicker(outletId = outletId, vm = vm)
-        Text("Total Rp${ui.cart.sumOf { it.qty * it.unitPrice }}")
+        Text(
+            "Total Rp${ui.cart.sumOf { it.qty * it.unitPrice }}",
+            style = MaterialTheme.typography.titleLarge
+        )
         ui.message?.let { Text(it) }
         ui.lastReceiptPath?.let { Text("Struk fake: $it", style = MaterialTheme.typography.bodySmall) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { vm.clearCart() }) { Text("Bersihkan") }
             Button(
                 onClick = { vm.pay(outletId, cashierName, "TUNAI") },
-                enabled = ui.cart.isNotEmpty() && !ui.busy, modifier = Modifier.fillMaxWidth()
+                enabled = ui.cart.isNotEmpty() && !ui.busy,
+                modifier = Modifier.fillMaxWidth()
             ) { Text(if (ui.busy) "Proses..." else "Bayar Tunai") }
         }
+    }
+}
+
+/** Baris keranjang dengan stepper ＋/－ besar untuk tap cepat. */
+@Composable
+private fun CartLineRow(line: CartLine, onMinus: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(line.name, style = MaterialTheme.typography.bodyLarge)
+            Text("Rp${line.unitPrice} x${line.qty}", style = MaterialTheme.typography.bodySmall)
+        }
+        TextButton(onClick = onMinus) { Text("－") }
     }
 }
 

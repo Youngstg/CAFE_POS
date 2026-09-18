@@ -77,6 +77,16 @@ class CashierViewModel @Inject constructor(
 
     fun clearCart() { _ui.value = _ui.value.copy(cart = emptyList(), message = null) }
 
+    /** Stepper keranjang: kurang 1 (hapus baris jika qty jadi 0). */
+    fun decreaseFromCart(menuId: String) {
+        val cart = _ui.value.cart.toMutableList()
+        val idx = cart.indexOfFirst { it.menuId == menuId }
+        if (idx < 0) return
+        val line = cart[idx]
+        if (line.qty <= 1) cart.removeAt(idx) else cart[idx] = line.copy(qty = line.qty - 1)
+        _ui.value = _ui.value.copy(cart = cart, message = null)
+    }
+
     /** Bayar -> checkout deduct Room -> cetak Fake PDF -> tandai PAID. */
     fun pay(outletId: String, cashierName: String, paymentRef: String) {
         val cart = _ui.value.cart
