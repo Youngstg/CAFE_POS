@@ -81,7 +81,9 @@ dependencies {
     kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Firebase (sync + auth + push; offline persistence enabled in code)
-    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
+    // CATATAN: BoM dikunci 33.x karena 34.x menghapus artefak -ktx
+    // (kode memakai Firebase.auth / Firebase.firestore dari -ktx).
+    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
