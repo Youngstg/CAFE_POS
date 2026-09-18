@@ -98,7 +98,7 @@ fun OwnerScreen(outletId: String, vm: OwnerViewModel = hiltViewModel()) {
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(conflicts, key = { it.id }) { order ->
-                Card(Modifier.fillMaxWidth().animateItem()) {
+                Card(Modifier.fillMaxWidth().animateItemPlacement()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("${order.id} • Rp${order.total} • stok kalah rebutan")
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

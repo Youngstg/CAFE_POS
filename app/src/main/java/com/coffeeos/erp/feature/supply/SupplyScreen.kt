@@ -86,7 +86,7 @@ fun SupplyScreen(
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(pos, key = { it.id }) { po ->
-                    Card(Modifier.fillMaxWidth().animateItem()) {
+                    Card(Modifier.fillMaxWidth().animateItemPlacement()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(
                                 Modifier.fillMaxWidth(),

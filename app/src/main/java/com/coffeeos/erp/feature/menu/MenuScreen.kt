@@ -107,7 +107,7 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
         items(menus, key = { it.id }) { menu ->
             Card(
                 onClick = { vm.selectMenu(if (selected == menu.id) null else menu.id) },
-                modifier = Modifier.fillMaxWidth().animateItem()
+                modifier = Modifier.fillMaxWidth().animateItemPlacement()
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(12.dp),
@@ -202,7 +202,7 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
         }
         items(promos, key = { it.id }) { promo ->
             Row(
-                Modifier.fillMaxWidth().animateItem(),
+                Modifier.fillMaxWidth().animateItemPlacement(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {

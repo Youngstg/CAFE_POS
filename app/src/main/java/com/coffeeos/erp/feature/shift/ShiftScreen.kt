@@ -79,7 +79,7 @@ fun ShiftScreen(
         LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(shifts, key = { it.id }) { s ->
                 Row(
-                    Modifier.fillMaxWidth().animateItem(),
+                    Modifier.fillMaxWidth().animateItemPlacement(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

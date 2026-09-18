@@ -100,7 +100,7 @@ private fun KanbanColumn(
                 Card(
                     border = BorderStroke(3.dp, accent),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier.fillMaxWidth().animateItem()
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement()
                 ) {
                     Column(
                         Modifier.padding(12.dp),

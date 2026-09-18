@@ -118,7 +118,7 @@ fun InventoryScreen(
                 }
                 val pct = ing.maxCapacity?.takeIf { it > 0 }?.let { ing.currentStock / it }
                 Card(
-                    modifier = Modifier.fillMaxWidth().animateItem(),
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                     colors = CardDefaults.cardColors(
                         containerColor = when {
                             ing.isStopped -> MaterialTheme.status.stopContainer
