@@ -4,15 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.coffeeos.erp.core.data.auth.AuthRepository
 import com.coffeeos.erp.core.data.local.AppDatabase
 import com.coffeeos.erp.core.data.local.PosDao
-import com.coffeeos.erp.core.data.repo.InventoryRepository
-import com.coffeeos.erp.core.data.repo.OrderRepository
-import com.coffeeos.erp.core.data.repo.OwnerRepository
-import com.coffeeos.erp.core.data.repo.ShiftRepository
-import com.coffeeos.erp.core.data.repo.SupplyRepository
-import com.coffeeos.erp.core.data.session.SessionManager
 import com.coffeeos.erp.printing.FakePdfPrinter
 import com.coffeeos.erp.printing.PrinterRepository
 import dagger.Module
@@ -41,9 +34,6 @@ object AppModule {
 
     @Provides @Singleton
     fun providePrinter(fake: FakePdfPrinter): PrinterRepository = fake
-
-    // Repository cukup constructor-inject; fungsi ini dokumentasi eksplisit untuk recruiter.
-    @Provides @Singleton fun provideOrders(r: OrderRepository) = r
 }
 
 /** Seed demo 1 outlet agar APK langsung bisa didemokan offline. */
