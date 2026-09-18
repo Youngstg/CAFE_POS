@@ -4,7 +4,8 @@ import com.coffeeos.erp.core.data.local.OrderEntity
 import com.coffeeos.erp.core.data.local.PendingMutation
 import com.coffeeos.erp.core.data.local.PosDao
 import com.coffeeos.erp.core.domain.order.OrderTotals
-import com.coffeeos.erp.core.sync.SyncTriggerimport com.coffeeos.erp.core.domain.order.ReceiptItem
+import com.coffeeos.erp.core.domain.order.ReceiptItem
+import com.coffeeos.erp.core.sync.SyncTrigger
 import com.coffeeos.erp.core.domain.stock.IngredientStock
 import com.coffeeos.erp.core.domain.stock.RecipeRequirement
 import com.coffeeos.erp.core.domain.stock.StockLevel
