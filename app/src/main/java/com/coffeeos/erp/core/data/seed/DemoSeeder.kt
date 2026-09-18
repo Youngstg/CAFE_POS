@@ -23,9 +23,9 @@ class DemoSeeder @Inject constructor(private val dao: PosDao) {
         )
         ings.forEach { dao.upsertIngredient(it) }
         val menus = listOf(
-            MenuEntity("m-kopsus", outletId, "Kopi Susu", 18_000),
-            MenuEntity("m-latte", outletId, "Caffe Latte", 22_000),
-            MenuEntity("m-croissant", outletId, "Croissant Butter", 15_000),
+            MenuEntity("m-kopsus", outletId, "Kopi Susu", 18_000, category = "Minuman"),
+            MenuEntity("m-latte", outletId, "Caffe Latte", 22_000, category = "Minuman"),
+            MenuEntity("m-croissant", outletId, "Croissant Butter", 15_000, category = "Makanan"),
         )
         menus.forEach { dao.upsertMenu(it) }
         listOf(

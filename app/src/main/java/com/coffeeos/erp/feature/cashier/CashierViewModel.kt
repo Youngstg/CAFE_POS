@@ -41,6 +41,14 @@ class CashierViewModel @Inject constructor(
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui
 
+    /** Null = belum dicek; false = shift belum dibuka (kasir terkunci lembut). */
+    private val _hasShift = MutableStateFlow<Boolean?>(null)
+    val hasShift: StateFlow<Boolean?> = _hasShift
+
+    fun checkShift(outletId: String) {
+        viewModelScope.launch { _hasShift.value = shifts.activeShift(outletId) != null }
+    }
+
     private val _promo = MutableStateFlow<PromoEntity?>(null)
     val selectedPromo: StateFlow<PromoEntity?> = _promo
 

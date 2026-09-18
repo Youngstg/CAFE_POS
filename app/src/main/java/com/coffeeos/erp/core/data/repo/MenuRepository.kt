@@ -25,13 +25,16 @@ class MenuRepository @Inject constructor(
     suspend fun recipesForMenu(menuId: String) = dao.recipesForMenu(menuId)
     suspend fun activePromos(outletId: String) = dao.listActivePromos(outletId)
 
-    suspend fun saveMenu(outletId: String, menuId: String?, name: String, price: Long): String {
+    suspend fun saveMenu(outletId: String, menuId: String?, name: String, price: Long, category: String = "Umum"): String {
         require(name.isNotBlank()) { "Nama menu wajib diisi" }
         require(price > 0) { "Harga harus > 0" }
         val id = menuId ?: ("M-" + UUID.randomUUID().toString().take(6).uppercase())
         val existing = dao.listMenus(outletId).firstOrNull { it.id == id }
         dao.upsertMenu(
-            (existing ?: MenuEntity(id, outletId, "", 0)).copy(name = name.trim(), price = price)
+            (existing ?: MenuEntity(id, outletId, "", 0)).copy(
+                name = name.trim(), price = price,
+                category = category.trim().ifBlank { "Umum" }
+            )
         )
         dao.enqueue(PendingMutation(UUID.randomUUID().toString(), "MENU_UPSERT", """{"menuId":"$id"}"""))
         sync.request()

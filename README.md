@@ -27,7 +27,8 @@ MVP-0 → MVP-4 selesai di level kode (belum dibuka di Android Studio — env ta
 Verifikasi tanpa JDK: `python tools/verify_stock_rules.py` (10/10) +
 `python tools/verify_mvp.py` (15/15) + `python tools/verify_sync.py` (9/9) +
 `python tools/verify_inbound.py` (15/15) + `python tools/verify_auth.py` (20/20) +
-`python tools/verify_catalog.py` (22/22) — cermin Python dari domain + sync Kotlin.
+`python tools/verify_catalog.py` (23/23) + `python tools/verify_design.py` (19/19).
+Desain: `docs/design.md` (kasir horizontal 2 kolom, KDS kanban, dsb).
 Setup login Firebase: `docs/firebase-auth.md` + `node tools/set-claims.js`.
 Test JVM mirror: `StockRulesTest`, `ShiftCalculationTest`, `OrderTotalsTest`,
 `PoCalculationTest`, `ConflictPolicyTest` → `./gradlew :app:testDebugUnitTest`.

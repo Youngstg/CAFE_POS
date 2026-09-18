@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -58,11 +60,25 @@ fun AuthScreen(vm: AuthViewModel = hiltViewModel(), onLoggedIn: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("CoffeeOS ERP", style = MaterialTheme.typography.headlineMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { mode = 0 }) { Text("Demo") }
-            TextButton(onClick = { mode = 1 }) { Text("Email") }
-            TextButton(onClick = { mode = 2 }) { Text("PIN") }
-        }
+        // Tiga jalur sebagai card terpisah (design.md §8.1) — jelas, bukan tab.
+        LoginPathCard(
+            selected = mode == 0,
+            onClick = { mode = 0 },
+            title = "Demo PIN",
+            desc = "Tanpa Firebase • owner/admin/kasir/dapur/gudang"
+        )
+        LoginPathCard(
+            selected = mode == 1,
+            onClick = { mode = 1 },
+            title = "Email Firebase",
+            desc = "Online sekali • role dari Custom Claims"
+        )
+        LoginPathCard(
+            selected = mode == 2,
+            onClick = { mode = 2 },
+            title = "PIN Cepat",
+            desc = "Offline • butuh sesi + PIN terdaftar"
+        )
         when (mode) {
             0 -> {
                 Text("Demo offline: owner/admin/kasir/dapur/gudang")
@@ -114,6 +130,23 @@ fun AuthScreen(vm: AuthViewModel = hiltViewModel(), onLoggedIn: () -> Unit) {
             }
         }
         ui.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    }
+}
+
+@Composable
+private fun LoginPathCard(selected: Boolean, onClick: () -> Unit, title: String, desc: String) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(desc, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 

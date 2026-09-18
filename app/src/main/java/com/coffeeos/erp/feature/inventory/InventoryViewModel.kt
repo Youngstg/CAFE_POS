@@ -48,6 +48,17 @@ class InventoryViewModel @Inject constructor(
         }
     }
 
+    private val _poPreview = MutableStateFlow<com.coffeeos.erp.core.data.local.PurchaseOrderEntity?>(null)
+    val poPreview: StateFlow<com.coffeeos.erp.core.data.local.PurchaseOrderEntity?> = _poPreview
+
+    /** Muat detail PO untuk pratinjau sebelum terima (cegah salah terima). */
+    fun previewPo(poId: String) {
+        viewModelScope.launch {
+            try { _poPreview.value = repo.getPo(poId.trim()) }
+            catch (e: Exception) { _ui.value = UiState(message = e.message) }
+        }
+    }
+
     /** Ubah kapasitas acuan 10%/2% (+satuan) tanpa mengganggu stok berjalan. */
     fun updateCapacity(ingredientId: String, maxCapacity: Double, unit: String) {
         viewModelScope.launch {

@@ -11,9 +11,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,10 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.coffeeos.erp.ui.components.ConfirmDialog
+import com.coffeeos.erp.ui.components.EmptyState
 
 /**
- * Katalog owner/admin: kelola menu + resep BOM per menu + promo.
- * Semua tersimpan offline-first dan tersinkron antar HP.
+ * Katalog owner/admin (design.md §8.7): CRUD menu + editor resep dua panel
+ * (bahan tersedia | komposisi) + promo dengan switch besar. Hapus destruktif
+ * selalu konfirmasi dialog (§11).
  */
 @Composable
 fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
@@ -43,10 +46,32 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
 
     var menuName by remember { mutableStateOf("") }
     var menuPrice by remember { mutableStateOf("") }
+    var menuCat by remember { mutableStateOf("") }
     var qty by remember { mutableStateOf("") }
     var promoName by remember { mutableStateOf("") }
     var promoPct by remember { mutableStateOf("10") }
     var promoMin by remember { mutableStateOf("50000") }
+    var confirmDeleteMenu by remember { mutableStateOf<String?>(null) }
+    var confirmDeletePromo by remember { mutableStateOf<String?>(null) }
+
+    confirmDeleteMenu?.let { menuId ->
+        ConfirmDialog(
+            title = "Hapus menu?",
+            body = "Resep menu ini ikut terhapus di semua HP. Stok bahan tidak berubah.",
+            confirmLabel = "Hapus",
+            onConfirm = { vm.deleteMenu(menuId); confirmDeleteMenu = null },
+            onDismiss = { confirmDeleteMenu = null }
+        )
+    }
+    confirmDeletePromo?.let { promoId ->
+        ConfirmDialog(
+            title = "Hapus promo?",
+            body = "Promo hilang dari kasir semua HP.",
+            confirmLabel = "Hapus",
+            onConfirm = { vm.deletePromo(promoId); confirmDeletePromo = null },
+            onDismiss = { confirmDeletePromo = null }
+        )
+    }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(12.dp),
@@ -65,31 +90,39 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
+            OutlinedTextField(
+                value = menuCat, onValueChange = { menuCat = it },
+                label = { Text("Kategori (mis. Minuman)") },
+                modifier = Modifier.fillMaxWidth(), singleLine = true
+            )
             Button(onClick = {
-                vm.saveMenu(outletId, null, menuName, menuPrice.toLongOrNull() ?: 0)
-                menuName = ""; menuPrice = ""
+                vm.saveMenu(outletId, null, menuName, menuPrice.toLongOrNull() ?: 0, menuCat)
+                menuName = ""; menuPrice = ""; menuCat = ""
             }) { Text("＋ Tambah Menu") }
             ui.message?.let { Text(it) }
         }
-        items(menus) { menu ->
+        if (menus.isEmpty()) {
+            item { EmptyState(glyph = "☕", title = "Belum ada menu", hint = "Tambah menu pertama di atas.") }
+        }
+        items(menus, key = { it.id }) { menu ->
             Card(
                 onClick = { vm.selectMenu(if (selected == menu.id) null else menu.id) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().animateItem()
             ) {
                 Row(
                     Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(menu.name, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Rp${menu.price} • " +
+                            "${menu.category} • Rp${menu.price} • " +
                                 if (menu.isAvailable) "Jual" else "Mati (stok)",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    TextButton(onClick = { vm.deleteMenu(menu.id) }) { Text("Hapus") }
+                    TextButton(onClick = { confirmDeleteMenu = menu.id }) { Text("Hapus") }
                 }
             }
         }
@@ -100,6 +133,9 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
                     "Resep: ${menus.firstOrNull { it.id == menuId }?.name}",
                     style = MaterialTheme.typography.titleMedium
                 )
+                if (recipes.isEmpty()) {
+                    Text("Belum ada bahan — tambah dari daftar bawah.", style = MaterialTheme.typography.bodySmall)
+                }
                 recipes.forEach { r ->
                     Row(
                         Modifier.fillMaxWidth(),
@@ -118,13 +154,19 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
                     label = { Text("Takaran") }, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
+                Text("Kiri: bahan tersedia (tap ＋) — kanan: komposisi di atas.", style = MaterialTheme.typography.bodySmall)
                 ingredients.forEach { ing ->
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("${ing.name} (${ing.unit})", modifier = Modifier.weight(1f))
+                        Column(Modifier.weight(1f)) {
+                            Text("${ing.name} (${ing.unit})")
+                            TextButton(onClick = { vm.deleteIngredient(ing.id) }) {
+                                Text("Hapus bahan", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                         TextButton(onClick = {
                             vm.saveRecipe(menuId, ing.id, qty.toDoubleOrNull() ?: 0.0)
                         }) { Text("＋") }
@@ -158,9 +200,9 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
                 promoName = ""
             }) { Text("＋ Tambah Promo") }
         }
-        items(promos) { promo ->
+        items(promos, key = { it.id }) { promo ->
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().animateItem(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -172,18 +214,16 @@ fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = promo.active,
-                        onCheckedChange = {
-                            vm.savePromo(
-                                outletId, promo.id, promo.name, promo.percentOff,
-                                promo.fixedDiscount, promo.minOrder, it
-                            )
-                        }
-                    )
-                    TextButton(onClick = { vm.deletePromo(promo.id) }) { Text("Hapus") }
-                }
+                Switch(
+                    checked = promo.active,
+                    onCheckedChange = {
+                        vm.savePromo(
+                            outletId, promo.id, promo.name, promo.percentOff,
+                            promo.fixedDiscount, promo.minOrder, it
+                        )
+                    }
+                )
+                TextButton(onClick = { confirmDeletePromo = promo.id }) { Text("Hapus") }
             }
         }
     }

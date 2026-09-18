@@ -1,21 +1,32 @@
 package com.coffeeos.erp.ui.navigation
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.coffeeos.erp.core.domain.auth.UserRole
 import com.coffeeos.erp.feature.auth.AuthScreen
@@ -29,9 +40,10 @@ import com.coffeeos.erp.feature.shift.ShiftScreen
 import com.coffeeos.erp.feature.supply.SupplyScreen
 
 /**
- * Navigasi role-based 1 APK:
- * - Kasir: Kasir + Shift. - Dapur: KDS. - Gudang: Inventory + Supply.
- * - Admin/Owner: Owner + Menu(katalog+promo) + Supply(approve) + Inventory + Shift.
+ * Navigasi role-based 1 APK (design.md §7): bottom NavigationBar + ikon,
+ * sesedikit mungkin tab untuk Kasir & Dapur.
+ * - Kasir: Kasir + Shift. - Dapur: KDS. - Gudang: Stok + Supply.
+ * - Admin/Owner: Owner + Menu + Supply + Stok + Shift.
  */
 @Composable
 fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
@@ -57,7 +69,13 @@ fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
     Column(Modifier.fillMaxSize()) {
         NavHost(navController = navController, startDestination = home, modifier = Modifier.weight(1f)) {
             composable(Routes.CASHIER) {
-                CashierScreen(outletId = outletId, cashierName = session.displayName)
+                CashierScreen(
+                    outletId = outletId,
+                    cashierName = session.displayName,
+                    onOpenShift = {
+                        navController.navigate(Routes.SHIFT) { launchSingleTop = true }
+                    }
+                )
             }
             composable(Routes.KITCHEN) { KitchenScreen(outletId = outletId) }
             composable(Routes.INVENTORY) {
@@ -77,28 +95,52 @@ fun CoffeeosNavGraph(authVm: AuthViewModel = hiltViewModel()) {
         }
         RoleTabBar(
             role = session.role,
-            onNavigate = { navController.navigate(it) { launchSingleTop = true } },
+            navController = navController,
             onLogout = { authVm.logout() }
         )
     }
 }
 
+private data class Tab(val label: String, val route: String, val icon: ImageVector)
+
 @Composable
-private fun RoleTabBar(role: UserRole, onNavigate: (String) -> Unit, onLogout: () -> Unit) {
+private fun RoleTabBar(role: UserRole, navController: NavController, onLogout: () -> Unit) {
     val tabs = when (role) {
-        UserRole.CASHIER -> listOf("Kasir" to Routes.CASHIER, "Shift" to Routes.SHIFT)
-        UserRole.KITCHEN -> listOf("Dapur" to Routes.KITCHEN)
-        UserRole.WAREHOUSE -> listOf("Stok" to Routes.INVENTORY, "Supply" to Routes.SUPPLY)
-        UserRole.ADMIN_OUTLET, UserRole.OWNER ->
-            listOf(
-                "Owner" to Routes.OWNER, "Menu" to Routes.MENU, "Supply" to Routes.SUPPLY,
-                "Stok" to Routes.INVENTORY, "Shift" to Routes.SHIFT
-            )
+        UserRole.CASHIER -> listOf(
+            Tab("Kasir", Routes.CASHIER, Icons.Filled.PointOfSale),
+            Tab("Shift", Routes.SHIFT, Icons.Filled.Schedule)
+        )
+        UserRole.KITCHEN -> listOf(Tab("Dapur", Routes.KITCHEN, Icons.Filled.Restaurant))
+        UserRole.WAREHOUSE -> listOf(
+            Tab("Stok", Routes.INVENTORY, Icons.Filled.Inventory),
+            Tab("Supply", Routes.SUPPLY, Icons.Filled.LocalShipping)
+        )
+        UserRole.ADMIN_OUTLET, UserRole.OWNER -> listOf(
+            Tab("Owner", Routes.OWNER, Icons.Filled.Dashboard),
+            Tab("Menu", Routes.MENU, Icons.Filled.RestaurantMenu),
+            Tab("Supply", Routes.SUPPLY, Icons.Filled.LocalShipping),
+            Tab("Stok", Routes.INVENTORY, Icons.Filled.Inventory),
+            Tab("Shift", Routes.SHIFT, Icons.Filled.Schedule)
+        )
     }
-    Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        tabs.forEach { (label, route) ->
-            Button(onClick = { onNavigate(route) }, modifier = Modifier.fillMaxWidth()) { Text(label) }
+    val backStack by navController.currentBackStackEntryAsState()
+    val current = backStack?.destination?.route
+    NavigationBar(modifier = Modifier.fillMaxWidth()) {
+        tabs.forEach { tab ->
+            NavigationBarItem(
+                selected = current == tab.route,
+                onClick = {
+                    navController.navigate(tab.route) { launchSingleTop = true }
+                },
+                icon = { Icon(tab.icon, contentDescription = tab.label) },
+                label = { Text(tab.label) }
+            )
         }
-        TextButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Keluar") }
+        NavigationBarItem(
+            selected = false,
+            onClick = onLogout,
+            icon = { Icon(Icons.Filled.Logout, contentDescription = "Keluar") },
+            label = { Text("Keluar") }
+        )
     }
 }

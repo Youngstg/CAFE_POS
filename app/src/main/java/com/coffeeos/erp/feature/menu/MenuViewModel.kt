@@ -65,8 +65,8 @@ class MenuViewModel @Inject constructor(private val repo: MenuRepository) : View
         }
     }
 
-    fun saveMenu(outletId: String, menuId: String?, name: String, price: Long) =
-        run({ repo.saveMenu(outletId, menuId, name, price) })
+    fun saveMenu(outletId: String, menuId: String?, name: String, price: Long, category: String) =
+        run({ repo.saveMenu(outletId, menuId, name, price, category) })
 
     fun deleteMenu(menuId: String) = run({
         repo.deleteMenu(menuId)
@@ -78,6 +78,9 @@ class MenuViewModel @Inject constructor(private val repo: MenuRepository) : View
 
     fun deleteRecipe(menuId: String, ingredientId: String) =
         run({ repo.deleteRecipe(menuId, ingredientId) }, { reloadRecipes(menuId) })
+
+    /** Hapus bahan global — ditolak repo jika masih dipakai resep mana pun. */
+    fun deleteIngredient(ingredientId: String) = run({ repo.deleteIngredient(ingredientId) })
 
     fun savePromo(
         outletId: String, promoId: String?, name: String,

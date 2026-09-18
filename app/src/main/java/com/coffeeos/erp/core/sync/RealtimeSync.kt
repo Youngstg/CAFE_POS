@@ -233,7 +233,8 @@ class RealtimeSync @Inject constructor(private val dao: PosDao) {
         dao.upsertMenu(
             (local ?: MenuEntity(doc.id, outletId, doc.getString("name") ?: doc.id, 0)).copy(
                 name = doc.getString("name") ?: local?.name ?: doc.id,
-                price = doc.getLong("price") ?: local?.price ?: 0L
+                price = doc.getLong("price") ?: local?.price ?: 0L,
+                category = doc.getString("category") ?: local?.category ?: "Umum"
             )
         )
     }

@@ -33,6 +33,7 @@ data class MenuEntity(
     val outletId: String,
     val name: String,
     val price: Long,
+    val category: String = "Umum",
     val isAvailable: Boolean = true,
     val updatedAt: Long = System.currentTimeMillis(),
 )
@@ -210,7 +211,7 @@ interface PosDao {
 
 @Database(
     entities = [IngredientEntity::class, MenuEntity::class, RecipeEntity::class, OrderEntity::class, PendingMutation::class, ShiftEntity::class, SupplierEntity::class, PurchaseOrderEntity::class, PromoEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -31,6 +31,9 @@ class InventoryRepository @Inject constructor(
         sync.request()
     }
 
+    /** Detail PO untuk pratinjau sebelum konfirmasi terima (design.md §8.5). */
+    suspend fun getPo(poId: String) = dao.poById(poId)
+
     /** Terima PO: guard canReceive ( APPROVED + belum pernah diterima). */
     suspend fun receivePo(poId: String, actorId: String) {
         val po = dao.poById(poId) ?: throw IllegalArgumentException("PO tidak ada")

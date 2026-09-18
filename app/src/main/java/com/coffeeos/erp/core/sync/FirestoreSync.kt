@@ -227,7 +227,7 @@ class FirestoreSync @Inject constructor(
                 val menuId = str(payload, "menuId") ?: return null
                 val menu = dao.listMenus(outletId).firstOrNull { it.id == menuId } ?: return null
                 col("menus").document(menuId).set(
-                    mapOf("name" to menu.name, "price" to menu.price),
+                    mapOf("name" to menu.name, "price" to menu.price, "category" to menu.category),
                     SetOptions.merge()
                 ).await()
             }

@@ -18,12 +18,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -42,14 +46,38 @@ import com.coffeeos.erp.core.data.repo.CartLine
 fun CashierScreen(
     outletId: String,
     cashierName: String,
+    onOpenShift: () -> Unit = {},
     vm: CashierViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsState()
     val menus by vm.menus(outletId).collectAsState()
+    val hasShift by vm.hasShift.collectAsState()
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    LaunchedEffect(outletId) { vm.refreshPending() }
+    var category by remember { mutableStateOf("Semua") }
+    LaunchedEffect(outletId) { vm.refreshPending(); vm.checkShift(outletId) }
+
+    // Kunci lembut bila shift belum dibuka (design.md §8.2): CTA, bukan error.
+    if (hasShift == false) {
+        Column(
+            Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("☕", style = MaterialTheme.typography.displayLarge)
+            Text("Shift belum dibuka", style = MaterialTheme.typography.titleLarge)
+            Text("Buka shift dulu sebelum jualan (catat modal awal).")
+            Button(onClick = onOpenShift, modifier = Modifier.fillMaxWidth()) {
+                Text("Buka Shift")
+            }
+        }
+        return
+    }
+
+    val categories = remember(menus) { listOf("Semua") + menus.map { it.category }.distinct() }
+    val visible = if (category == "Semua") menus else menus.filter { it.category == category }
 
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CategoryChips(categories = categories, selected = category, onSelect = { category = it })
         if (ui.pendingSync > 0) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -69,7 +97,7 @@ fun CashierScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 MenuGrid(
-                    menus = menus,
+                    menus = visible,
                     onAdd = { vm.addToCart(it) },
                     modifier = Modifier.weight(2f).fillMaxHeight()
                 )
@@ -82,7 +110,7 @@ fun CashierScreen(
             }
         } else {
             MenuGrid(
-                menus = menus,
+                menus = visible,
                 onAdd = { vm.addToCart(it) },
                 modifier = Modifier.weight(1f).fillMaxWidth()
             )
@@ -91,6 +119,24 @@ fun CashierScreen(
                 cashierName = cashierName,
                 vm = vm,
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/** Filter kategori sebagai chip horizontal (design.md §8.2). */
+@Composable
+private fun CategoryChips(
+    categories: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        categories.forEach { cat ->
+            FilterChip(
+                selected = selected == cat,
+                onClick = { onSelect(cat) },
+                label = { Text(cat) }
             )
         }
     }

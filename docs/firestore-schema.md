@@ -7,7 +7,7 @@ Semua di-scope: `/tenants/{tenantId}/outlets/{outletId}/{collection}/{doc}`.
 - `users/{uid}`: `{ role: owner|admin_outlet|cashier|kitchen|warehouse, pinHash, outletId }`
   Role juga di Firebase Auth Custom Claims (`role`, `tenantId`) untuk Security Rules.
 - `ingredients/{ingId}`: `{ name, currentStock, maxCapacity, unit, isLow, isStopped, updatedAt }`
-- `menus/{menuId}`: `{ name, price, isAvailable, updatedAt }`
+- `menus/{menuId}`: `{ name, price, category, isAvailable, updatedAt }`
 - `recipes/{menuId}_{ingId}`: `{ menuId, ingredientId, qtyPerPortion }` (BOM)
 - `promos/{promoId}`: `{ name, percentOff, fixedDiscount, minOrder, active }`
 - `orders/{orderId}`: `{ status: QUEUED|COOKING|READY|PAID|CONFLICT_NEED_REVIEW, items[], total, createdAt, deviceId }`
