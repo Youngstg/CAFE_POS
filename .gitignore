@@ -27,6 +27,9 @@ keystore.properties
 # Node modules untuk tools/ provisioning
 tools/node_modules/
 
+# Dokumen kredensial lokal — berisi password asli, JANGAN commit
+docs/akun.md
+
 # ========================
 # Kotlin / IDE
 # ========================
