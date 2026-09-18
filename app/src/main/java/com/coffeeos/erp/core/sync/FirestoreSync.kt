@@ -7,9 +7,8 @@ import com.coffeeos.erp.core.domain.stock.IngredientStock
 import com.coffeeos.erp.core.domain.stock.StockLevel
 import com.coffeeos.erp.core.domain.stock.evaluateIngredient
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.Firebase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -31,13 +30,13 @@ class FirestoreSync @Inject constructor(
     private val dao: PosDao,
     private val session: SessionManager,
 ) {
-    private val db by lazy { Firebase.firestore }
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     suspend fun syncOnce(): SyncResult {
         val s = session.session.first() ?: return SyncResult(0, 0)
         var ok = 0
         var failed = 0
-        repeat(10) {
+        for (round in 0 until 10) {
             val batch = dao.peekQueue(20)
             if (batch.isEmpty()) return SyncResult(ok, failed)
             var stop = false

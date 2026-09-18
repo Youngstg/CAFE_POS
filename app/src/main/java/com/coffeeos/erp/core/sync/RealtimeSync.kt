@@ -16,9 +16,8 @@ import com.coffeeos.erp.core.domain.stock.isMenuSellable
 import com.coffeeos.erp.core.domain.supply.PoCalculation
 import com.coffeeos.erp.core.domain.sync.InboundPolicy
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,7 +40,7 @@ import javax.inject.Singleton
 @Singleton
 class RealtimeSync @Inject constructor(private val dao: PosDao) {
 
-    private val db by lazy { Firebase.firestore }
+    private val db by lazy { FirebaseFirestore.getInstance() }
     private var scope: CoroutineScope? = null
     private val regs = mutableListOf<ListenerRegistration>()
     private var startedFor: String? = null
