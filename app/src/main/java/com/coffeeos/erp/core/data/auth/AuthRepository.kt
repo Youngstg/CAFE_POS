@@ -3,8 +3,7 @@ package com.coffeeos.erp.core.data.auth
 import com.coffeeos.erp.core.data.session.SessionManager
 import com.coffeeos.erp.core.domain.auth.PinHash
 import com.coffeeos.erp.core.domain.auth.UserRole
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -38,7 +37,7 @@ object DemoAccounts {
 class AuthRepository @Inject constructor(
     private val session: SessionManager,
 ) {
-    private val firebaseAuth by lazy { Firebase.auth }
+    private val firebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     suspend fun loginEmail(email: String, password: String): LoginResult {
         require(email.isNotBlank() && password.isNotBlank()) { "Email & password wajib diisi" }
