@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.coffeeos.erp.feature.kitchen
 
 import androidx.compose.foundation.BorderStroke

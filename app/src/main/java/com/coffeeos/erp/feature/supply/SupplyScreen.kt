@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.coffeeos.erp.feature.supply
 
 import androidx.compose.foundation.layout.Arrangement
