@@ -81,6 +81,11 @@ private val CoffeeosShapes = Shapes(
     large = RoundedCornerShape(16.dp)
 )
 
+/** Aksen energi khusus kasir (Fase 1 Croizan): oranye untuk Checkout/＋/KPI.
+ * Token tambahan — palet dasar design.md tidak diubah. */
+val EnergyOrange = Color(0xFFE8641C)
+val EnergyOrangeDark = Color(0xFFC24E12)
+
 /** Ambang selisih kas "kecil" (design.md §8.3): di bawah ini kuning, di atasnya merah. */
 const val SMALL_DIFF_THRESHOLD = 10_000L
 

@@ -21,6 +21,13 @@ class ShiftRepository @Inject constructor(
     suspend fun activeShift(outletId: String) = dao.activeShift(outletId)
     suspend fun pendingCount() = dao.pendingCount()
 
+    /** Omzet shift berjalan (order PAID) untuk strip KPI kasir. */
+    suspend fun salesTotal(outletId: String): Long = dao.paidTotal(outletId)
+
+    /** Tiket terbuka (QUEUED/COOKING/READY) untuk strip KPI kasir. */
+    suspend fun openTickets(outletId: String): Int =
+        dao.listOrders(outletId).count { it.status == "QUEUED" || it.status == "COOKING" || it.status == "READY" }
+
     suspend fun openShift(outletId: String, openedBy: String, openedByName: String, modalAwal: Long): String {
         require(modalAwal >= 0) { "Modal tidak valid" }
         if (dao.activeShift(outletId) != null) throw IllegalStateException("Shift masih aktif")

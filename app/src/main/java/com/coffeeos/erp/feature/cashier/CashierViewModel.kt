@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -51,6 +52,27 @@ class CashierViewModel @Inject constructor(
 
     private val _promo = MutableStateFlow<PromoEntity?>(null)
     val selectedPromo: StateFlow<PromoEntity?> = _promo
+
+    /** Query pencarian menu (filter nama, murni UI-state). */
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query
+    fun setQuery(q: String) { _query.value = q }
+
+    /** Strip KPI kasir Fase 1: omzet shift + tiket terbuka + bahan STOP. */
+    data class CashierKpi(val revenue: Long, val openTickets: Int, val critical: Int)
+    private val _kpi = MutableStateFlow<CashierKpi?>(null)
+    val kpi: StateFlow<CashierKpi?> = _kpi
+
+    fun loadKpi(outletId: String) {
+        viewModelScope.launch {
+            try {
+                val revenue = shifts.salesTotal(outletId)
+                val open = shifts.openTickets(outletId)
+                val critical = catalog.observeIngredients(outletId).first().count { it.isStopped }
+                _kpi.value = CashierKpi(revenue, open, critical)
+            } catch (_: Exception) { /* KPI gagal = strip disembunyikan, kasir tetap jalan */ }
+        }
+    }
 
     fun promos(outletId: String): StateFlow<List<PromoEntity>> =
         catalog.observePromos(outletId)

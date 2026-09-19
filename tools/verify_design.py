@@ -128,5 +128,20 @@ check("KDS adaptif landscape/portrait",
 manifest = (base / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
 check("tanpa kunci orientasi", "screenOrientation" not in manifest)
 
-print(f"\n{25 - failed}/25 lolos")
+# --- Fase 1 Croizan: kasir berenergi (tanpa data baru) ---
+theme_all = src("ui/theme/Theme.kt")
+check("token aksen energi", "E8641C" in theme_all)
+comp_cash = src("ui/components/CashierComponents.kt")
+check("MenuTile + MiniKpi + slot foto",
+      all(k in comp_cash for k in ("MenuTile", "MiniKpi", "imageUrl", "Brush")))
+cash2 = src("feature/cashier/CashierScreen.kt")
+check("kasir 3 zona + search + KPI",
+      all(k in cash2 for k in ("CategoryRail", "KpiStrip", "CashierHeader", "Cari menu",
+                               "Checkout", "MenuTile", "MiniKpi")))
+vm_cash = src("feature/cashier/CashierViewModel.kt")
+check("VM query + KPI", all(k in vm_cash for k in ("setQuery", "loadKpi", "CashierKpi")))
+shift_repo = src("core/data/repo/ShiftRepository.kt")
+check("repo dukung KPI", "salesTotal" in shift_repo and "openTickets" in shift_repo)
+
+print(f"\n{30 - failed}/30 lolos")
 raise SystemExit(1 if failed else 0)
