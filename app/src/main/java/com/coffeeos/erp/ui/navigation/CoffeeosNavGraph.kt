@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Logout
@@ -116,7 +116,7 @@ private fun RoleTabBar(role: UserRole, navController: NavController, onLogout: (
             Tab("Supply", Routes.SUPPLY, Icons.Filled.LocalShipping)
         )
         UserRole.ADMIN_OUTLET, UserRole.OWNER -> listOf(
-            Tab("Owner", Routes.OWNER, Icons.Filled.Dashboard),
+            Tab("Owner", Routes.OWNER, Icons.Filled.Home),
             Tab("Menu", Routes.MENU, Icons.Filled.RestaurantMenu),
             Tab("Supply", Routes.SUPPLY, Icons.Filled.LocalShipping),
             Tab("Stok", Routes.INVENTORY, Icons.Filled.Inventory),
