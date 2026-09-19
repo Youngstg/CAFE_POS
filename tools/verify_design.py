@@ -120,5 +120,13 @@ bounded = sum(
 )
 check("list berbatas di 5 layar (%d)" % bounded, bounded >= 5)
 
-print(f"\n{23 - failed}/23 lolos")
+# --- Adaptif orientasi otomatis (ikut sensor) ---
+kds_all = src("feature/kitchen/KitchenScreen.kt")
+check("KDS adaptif landscape/portrait",
+      "ORIENTATION_LANDSCAPE" in kds_all and "horizontalScroll" in kds_all
+      and "width(300.dp)" in kds_all)
+manifest = (base / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+check("tanpa kunci orientasi", "screenOrientation" not in manifest)
+
+print(f"\n{25 - failed}/25 lolos")
 raise SystemExit(1 if failed else 0)

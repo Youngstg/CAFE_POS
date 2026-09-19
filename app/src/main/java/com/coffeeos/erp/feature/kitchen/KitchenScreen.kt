@@ -2,7 +2,9 @@
 
 package com.coffeeos.erp.feature.kitchen
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -23,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,11 +40,16 @@ import com.coffeeos.erp.ui.theme.status
  * KDS kanban 3 kolom (design.md §8.4): QUEUED / COOKING / READY, fullscreen,
  * kolom scroll independen, tombol aksi besar, waktu tunggu relatif.
  * Update realtime antar HP via RealtimeSync (tanpa reload penuh).
+ * Adaptif orientasi (otomatis ikut sensor seperti game):
+ * - Landscape: 3 panel berdampingan.
+ * - Portrait: panel selebar 300dp digeser horizontal (tetap lega disentuh).
  */
 @Composable
 fun KitchenScreen(outletId: String, vm: KitchenViewModel = hiltViewModel()) {
     val queue by vm.queue.collectAsState(initial = emptyList())
     val msg by vm.message.collectAsState()
+    val landscape =
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     LaunchedEffect(outletId) { vm.track(outletId) }
 
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -47,7 +57,7 @@ fun KitchenScreen(outletId: String, vm: KitchenViewModel = hiltViewModel()) {
         msg?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (queue.isEmpty()) {
             EmptyState(glyph = "☕", title = "Dapur bersih", hint = "Belum ada order masuk.")
-        } else {
+        } else if (landscape) {
             Row(
                 Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -75,6 +85,36 @@ fun KitchenScreen(outletId: String, vm: KitchenViewModel = hiltViewModel()) {
                     onAction = null,
                     actionLabel = "",
                     modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+            }
+        } else {
+            Row(
+                Modifier.fillMaxSize().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                KanbanColumn(
+                    title = "QUEUED",
+                    orders = queue.filter { it.status == "QUEUED" },
+                    accent = MaterialTheme.status.info,
+                    onAction = { vm.setStatus(it, "COOKING") },
+                    actionLabel = "Masak",
+                    modifier = Modifier.width(300.dp).fillMaxHeight()
+                )
+                KanbanColumn(
+                    title = "COOKING",
+                    orders = queue.filter { it.status == "COOKING" },
+                    accent = MaterialTheme.status.warning,
+                    onAction = { vm.setStatus(it, "READY") },
+                    actionLabel = "Siap",
+                    modifier = Modifier.width(300.dp).fillMaxHeight()
+                )
+                KanbanColumn(
+                    title = "READY",
+                    orders = queue.filter { it.status == "READY" },
+                    accent = MaterialTheme.status.safe,
+                    onAction = null,
+                    actionLabel = "",
+                    modifier = Modifier.width(300.dp).fillMaxHeight()
                 )
             }
         }
