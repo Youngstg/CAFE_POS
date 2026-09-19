@@ -110,7 +110,7 @@ fun InventoryScreen(
         if (shown.isEmpty()) {
             EmptyState(glyph = "📦", title = "Belum ada bahan", hint = "Tambah bahan via layar Katalog.")
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(shown, key = { it.id }) { ing ->
                 var fisik by remember(ing.id, ing.currentStock) {
                     mutableStateOf(ing.currentStock.toString())

@@ -78,7 +78,7 @@ fun ShiftScreen(
             )
         }
         Text("Riwayat", style = MaterialTheme.typography.titleMedium)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(shifts, key = { it.id }) { s ->
                 Row(
                     Modifier.fillMaxWidth().animateItemPlacement(),

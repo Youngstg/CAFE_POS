@@ -86,7 +86,7 @@ fun SupplyScreen(
             if (pos.isEmpty()) {
                 EmptyState(glyph = "📦", title = "Belum ada PO", hint = "Buat draft pertama dari supplier.")
             }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(pos, key = { it.id }) { po ->
                     Card(Modifier.fillMaxWidth().animateItemPlacement()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

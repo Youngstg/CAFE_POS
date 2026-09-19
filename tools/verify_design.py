@@ -93,7 +93,7 @@ check("katalog switch + konfirmasi + kategori",
 # --- §8.8 Owner ---
 owner = src("feature/owner/OwnerScreen.kt")
 check("stat grid + refund outline + konfirmasi",
-      "StatCard" in owner and "GridCells.Fixed(2)" in owner
+      "StatCard" in owner and "StatRow" in owner and "GridCells" not in owner
       and "OutlinedButton" in owner and "confirmForce" in owner)
 
 # --- Kategori end-to-end ---
@@ -107,5 +107,18 @@ check("kategori end-to-end",
 gradle = (base / "app/build.gradle.kts").read_text(encoding="utf-8")
 check("dep ikon compose", "material-icons-core" in gradle)
 
-print(f"\n{21 - failed}/21 lolos")
+# --- Anti-stuck & anti-crash layout ---
+auth = src("feature/auth/AuthScreen.kt")
+check("login bisa scroll (landscape)", auth.count("verticalScroll") >= 2)
+bounded = sum(
+    src(s).count("LazyColumn(Modifier.weight")
+    for s in ["feature/inventory/InventoryScreen.kt",
+              "feature/supply/SupplyScreen.kt",
+              "feature/owner/OwnerScreen.kt",
+              "feature/shift/ShiftScreen.kt",
+              "feature/kitchen/KitchenScreen.kt"]
+)
+check("list berbatas di 5 layar (%d)" % bounded, bounded >= 5)
+
+print(f"\n{23 - failed}/23 lolos")
 raise SystemExit(1 if failed else 0)

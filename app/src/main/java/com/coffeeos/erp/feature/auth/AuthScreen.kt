@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,7 +58,7 @@ fun AuthScreen(vm: AuthViewModel = hiltViewModel(), onLoggedIn: () -> Unit) {
     var password by remember { mutableStateOf("") }
 
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("CoffeeOS ERP", style = MaterialTheme.typography.headlineMedium)
@@ -160,7 +162,7 @@ private fun PinSetupGate(
 ) {
     var pin by remember { mutableStateOf("") }
     if (saved) { onDone(); return }
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Buat PIN cepat?", style = MaterialTheme.typography.titleLarge)
         Text("PIN dipakai kasir masuk offline tanpa password panjang. Bisa dilewati.")
         OutlinedTextField(

@@ -97,7 +97,7 @@ private fun KanbanColumn(
             fontWeight = FontWeight.Bold,
             color = accent
         )
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(orders, key = { it.id }) { order ->
                 Card(
                     border = BorderStroke(3.dp, accent),
