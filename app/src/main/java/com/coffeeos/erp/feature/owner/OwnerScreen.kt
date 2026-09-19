@@ -42,7 +42,7 @@ import com.coffeeos.erp.ui.theme.status
 fun OwnerScreen(outletId: String, vm: OwnerViewModel = hiltViewModel()) {
     val dash by vm.dashboard.collectAsState()
     val msg by vm.message.collectAsState()
-    val conflicts by vm.conflicts(outletId).collectAsState()
+    val conflicts by remember(outletId) { vm.conflicts(outletId) }.collectAsState()
     var confirmForce by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(outletId) { vm.load(outletId) }
 

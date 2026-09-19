@@ -57,7 +57,17 @@ check("kasir chips kategori + lock shift",
 shift = src("feature/shift/ShiftScreen.kt").replace(" ", "")
 check("shift selisih semantik", "SMALL_DIFF_THRESHOLD" in shift and "StatusBadge" in shift)
 
-# --- §8.4 KDS kanban ---
+# --- Anti-kedip: flow Room distabilkan dengan remember(outletId) ---
+import re
+screens = ["feature/cashier/CashierScreen.kt", "feature/inventory/InventoryScreen.kt",
+           "feature/supply/SupplyScreen.kt", "feature/owner/OwnerScreen.kt",
+           "feature/shift/ShiftScreen.kt", "feature/menu/MenuScreen.kt"]
+stable = all("remember(outletId)" in src(s) for s in screens)
+raw = []
+for s in screens:
+    raw += re.findall(r"by vm\.\w+\(outletId\)\.collectAsState\(\)", src(s))
+check("flow stabil remember(outletId) 7 layar", stable)
+check("tanpa collect langsung dari VM (%s)" % (raw or "-"), not raw)
 kds = src("feature/kitchen/KitchenScreen.kt")
 check("KDS 3 kolom + waktu relatif",
       all(k in kds for k in ('"QUEUED"', '"COOKING"', '"READY"', "relativeTime",
@@ -97,5 +107,5 @@ check("kategori end-to-end",
 gradle = (base / "app/build.gradle.kts").read_text(encoding="utf-8")
 check("dep ikon compose", "material-icons-core" in gradle)
 
-print(f"\n{19 - failed}/19 lolos")
+print(f"\n{21 - failed}/21 lolos")
 raise SystemExit(1 if failed else 0)

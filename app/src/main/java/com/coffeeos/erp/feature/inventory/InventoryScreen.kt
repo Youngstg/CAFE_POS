@@ -49,7 +49,7 @@ fun InventoryScreen(
     vm: InventoryViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsState()
-    val ingredients by vm.ingredients(outletId).collectAsState()
+    val ingredients by remember(outletId) { vm.ingredients(outletId) }.collectAsState()
     val poPreview by vm.poPreview.collectAsState()
     var poId by remember { mutableStateOf("") }
     var editMode by remember { mutableStateOf(false) }

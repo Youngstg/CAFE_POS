@@ -40,9 +40,9 @@ import com.coffeeos.erp.ui.components.EmptyState
 @Composable
 fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsState()
-    val menus by vm.menus(outletId).collectAsState()
-    val ingredients by vm.ingredients(outletId).collectAsState()
-    val promos by vm.promos(outletId).collectAsState()
+    val menus by remember(outletId) { vm.menus(outletId) }.collectAsState()
+    val ingredients by remember(outletId) { vm.ingredients(outletId) }.collectAsState()
+    val promos by remember(outletId) { vm.promos(outletId) }.collectAsState()
     val selected by vm.selectedMenu.collectAsState()
     val recipes by vm.recipes.collectAsState()
 

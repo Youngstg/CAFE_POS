@@ -44,7 +44,7 @@ fun ShiftScreen(
     vm: ShiftViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsState()
-    val shifts by vm.shifts(outletId).collectAsState()
+    val shifts by remember(outletId) { vm.shifts(outletId) }.collectAsState()
     var modal by remember { mutableStateOf("500000") }
     var counted by remember { mutableStateOf("") }
 

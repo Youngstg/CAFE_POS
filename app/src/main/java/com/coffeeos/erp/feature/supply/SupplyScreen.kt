@@ -47,8 +47,8 @@ fun SupplyScreen(
     vm: SupplyViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsState()
-    val suppliers by vm.suppliers(outletId).collectAsState()
-    val pos by vm.pos(outletId).collectAsState()
+    val suppliers by remember(outletId) { vm.suppliers(outletId) }.collectAsState()
+    val pos by remember(outletId) { vm.pos(outletId) }.collectAsState()
     var supName by remember { mutableStateOf("") }
 
     Scaffold(

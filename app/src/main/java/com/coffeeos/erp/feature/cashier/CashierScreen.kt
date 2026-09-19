@@ -50,7 +50,9 @@ fun CashierScreen(
     vm: CashierViewModel = hiltViewModel(),
 ) {
     val ui by vm.ui.collectAsState()
-    val menus by vm.menus(outletId).collectAsState()
+    // remember: bikin StateFlow SEKALI per outlet. Tanpa ini, tiap recompose
+    // bikin flow baru -> collect restart -> query Room berulang -> UI kedip.
+    val menus by remember(outletId) { vm.menus(outletId) }.collectAsState()
     val hasShift by vm.hasShift.collectAsState()
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     var category by remember { mutableStateOf("Semua") }
@@ -239,7 +241,7 @@ private fun CartLineRow(line: CartLine, onMinus: () -> Unit) {
 /** Pilih 1 promo aktif (atau tanpa promo) sebelum bayar. */
 @Composable
 private fun PromoPicker(outletId: String, vm: CashierViewModel) {
-    val promos by vm.promos(outletId).collectAsState()
+    val promos by remember(outletId) { vm.promos(outletId) }.collectAsState()
     val selected by vm.selectedPromo.collectAsState()
     val active = promos.filter { it.active }
     if (active.isEmpty()) return
