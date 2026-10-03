@@ -6,6 +6,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.coffeeos.erp.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -168,15 +172,14 @@ private fun CfdHeader(
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Kembali", tint = Color.White)
                 }
             }
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.logo_sukopi),
+                contentDescription = "Logo SuKopi",
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(EnergyOrange),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.LocalCafe, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-            }
+                    .size(44.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
             Column {
                 Text(
                     text = cafeName,
@@ -444,19 +447,19 @@ private fun QrisDisplaySection(state: CustomerDisplayState) {
 private fun PromoSlideSection() {
     val slides = listOf(
         PromoSlide(
-            icon = "☕",
+            imageRes = R.drawable.banner_cfd,
+            title = "Freshly Brewed Daily",
+            subtitle = "Nikmati sajian kopi racikan barista dan freshly baked pastry hangat setiap hari."
+        ),
+        PromoSlide(
+            imageRes = R.drawable.menu_kopsus,
             title = "Kumpulkan 10 Stempel Digital",
             subtitle = "Setiap pembelian 1 minuman = 1 stempel!\nDapatkan 1 Kopi Pilihan GRATIS pada stempel ke-10."
         ),
         PromoSlide(
-            icon = "📱",
+            imageRes = R.drawable.logo_sukopi,
             title = "Pesan Mandiri Dari Meja",
             subtitle = "Malas antre di kasir? Cukup scan kode QR di meja Anda dan pesan langsung dari smartphone!"
-        ),
-        PromoSlide(
-            icon = "✨",
-            title = "Specialty Coffee Beans",
-            subtitle = "100% Single Origin Arabica pilihan terbaik, disangrai dengan presisi oleh roaster lokal."
         )
     )
 
@@ -474,7 +477,7 @@ private fun PromoSlideSection() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -487,7 +490,19 @@ private fun PromoSlideSection() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(slide.icon, fontSize = 64.sp)
+                if (slide.imageRes != null) {
+                    Image(
+                        painter = painterResource(id = slide.imageRes),
+                        contentDescription = slide.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                } else {
+                    Text(slide.icon, fontSize = 64.sp)
+                }
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = slide.title,
@@ -496,7 +511,7 @@ private fun PromoSlideSection() {
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = slide.subtitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -507,14 +522,14 @@ private fun PromoSlideSection() {
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
 
         // Slide Indicators
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             slides.indices.forEach { index ->
                 Box(
                     modifier = Modifier
-                        .size(if (index == currentSlideIndex) 20.dp else 8.dp, 8.dp)
+                        .size(if (index == currentSlideIndex) 24.dp else 8.dp, 8.dp)
                         .clip(CircleShape)
                         .background(if (index == currentSlideIndex) EnergyOrange else Color(0xFF3B4048))
                 )
@@ -523,7 +538,7 @@ private fun PromoSlideSection() {
     }
 }
 
-private data class PromoSlide(val icon: String, val title: String, val subtitle: String)
+private data class PromoSlide(val imageRes: Int? = null, val icon: String = "☕", val title: String, val subtitle: String)
 
 @Composable
 private fun PaymentSuccessView(

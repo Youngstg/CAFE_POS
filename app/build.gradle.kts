@@ -19,15 +19,33 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1.0-mvp"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val keystoreFile = if (keystorePath != null) file(keystorePath) else rootProject.file("release.keystore")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "sukopi_pass"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "sukopi"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "sukopi_pass"
+            } else {
+                // Fallback otomatis ke debug signing jika keystore produksi belum dipasang
+                initWith(getByName("debug"))
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

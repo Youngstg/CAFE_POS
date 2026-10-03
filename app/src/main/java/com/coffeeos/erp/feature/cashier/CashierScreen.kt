@@ -104,6 +104,8 @@ import com.coffeeos.erp.core.data.local.MenuEntity
 import com.coffeeos.erp.core.data.repo.CartLine
 import com.coffeeos.erp.core.util.toRupiah
 import com.coffeeos.erp.ui.components.FirebaseConnectionDialog
+import com.coffeeos.erp.ui.components.SupervisorAuthDialog
+import kotlinx.coroutines.runBlocking
 import com.coffeeos.erp.core.sync.FirebaseHealthStatus
 import com.coffeeos.erp.ui.components.CategoryCard
 import com.coffeeos.erp.ui.components.EmptyState
@@ -146,6 +148,7 @@ fun CashierScreen(
     val context = LocalContext.current
     val firebaseHealthState by vm.firebaseHealthState.collectAsState()
     var showFirebaseDialog by remember { mutableStateOf(false) }
+    var pendingVoidHeldId by remember { mutableStateOf<String?>(null) }
     var category by remember { mutableStateOf("Semua") }
     var showReceiptPreview by remember { mutableStateOf(false) }
 
@@ -196,12 +199,28 @@ fun CashierScreen(
         )
     }
 
+    // Dialog Otorisasi Supervisor (Role Guard untuk Void Order)
+    if (pendingVoidHeldId != null) {
+        SupervisorAuthDialog(
+            actionTitle = "Otorisasi Void Pesanan",
+            actionDescription = "Menghapus pesanan yang ditahan memerlukan verifikasi PIN Supervisor / Manager.",
+            onVerify = { pin ->
+                runBlocking { vm.verifySupervisorPin(pin) }
+            },
+            onSuccess = {
+                pendingVoidHeldId?.let { vm.deleteHeldCart(it) }
+                pendingVoidHeldId = null
+            },
+            onDismiss = { pendingVoidHeldId = null }
+        )
+    }
+
     // Dialog daftar pesanan ditahan (Hold Bill)
     if (ui.showHeldDialog) {
         HeldCartsDialog(
             heldCarts = ui.heldCarts,
             onResume = { vm.resumeHeldCart(it) },
-            onDelete = { vm.deleteHeldCart(it) },
+            onDelete = { pendingVoidHeldId = it },
             onDismiss = { vm.setShowHeldDialog(false) }
         )
     }

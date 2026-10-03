@@ -77,12 +77,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.coffeeos.erp.core.data.local.MenuEntity
 import com.coffeeos.erp.core.domain.menu.DEFAULT_ADD_ONS
 import com.coffeeos.erp.core.domain.menu.IceLevel
 import com.coffeeos.erp.core.domain.menu.SugarLevel
 import com.coffeeos.erp.core.util.toRupiah
+import com.coffeeos.erp.ui.components.MenuImageResolver
 import com.coffeeos.erp.ui.theme.EnergyOrange
 import com.coffeeos.erp.ui.theme.PillShape
 import com.coffeeos.erp.ui.theme.SukopiTheme
@@ -331,17 +335,30 @@ private fun CustomerMenuTile(menu: MenuEntity, onOrderClick: () -> Unit) {
             Modifier
                 .padding(12.dp)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val imageRes = remember(menu.name, menu.id) {
+                MenuImageResolver.getDrawableForMenu(menu.name, menu.id)
+            }
+
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(110.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text("☕", fontSize = 36.sp)
+                if (imageRes != null) {
+                    Image(
+                        painter = painterResource(id = imageRes),
+                        contentDescription = menu.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text("☕", fontSize = 42.sp)
+                }
                 if (!menu.isAvailable) {
                     Box(
                         Modifier

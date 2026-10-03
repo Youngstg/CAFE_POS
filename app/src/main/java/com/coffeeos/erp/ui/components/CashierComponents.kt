@@ -41,6 +41,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import com.coffeeos.erp.core.data.local.MenuEntity
 import com.coffeeos.erp.core.util.toRupiah
 import com.coffeeos.erp.ui.theme.Dimens
@@ -83,6 +86,9 @@ fun ProductCard(
     val (gradTop, gradBottom) = remember(menu.id) {
         AestheticTileGradients[abs(menu.id.hashCode()) % AestheticTileGradients.size]
     }
+    val imageRes = remember(menu.name, menu.id) {
+        MenuImageResolver.getDrawableForMenu(menu.name, menu.id)
+    }
     val isAvailable = menu.isAvailable && stockCount > 0
 
     Surface(
@@ -103,17 +109,26 @@ fun ProductCard(
                     .background(Brush.linearGradient(listOf(gradTop, gradBottom))),
                 contentAlignment = Alignment.Center
             ) {
-                // Gambar ilustratif / inisial menu
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = menu.name.firstOrNull()?.uppercase() ?: "☕",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.95f)
+                if (imageRes != null) {
+                    Image(
+                        painter = painterResource(id = imageRes),
+                        contentDescription = menu.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize()
                     )
+                } else {
+                    // Gambar ilustratif / inisial menu jika foto belum ada
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = menu.name.firstOrNull()?.uppercase() ?: "☕",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.95f)
+                        )
+                    }
                 }
 
                 // Badge Stok di kiri atas foto (offset 8dp)

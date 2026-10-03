@@ -94,6 +94,37 @@ class AuthRepository @Inject constructor(
         return LoginResult(s)
     }
 
+    /**
+     * Verifikasi PIN Supervisor / Manager / Owner untuk aksi berisiko tinggi
+     * (Void transaksi, paksa lunas konflik stok, hapus master data).
+     */
+    suspend fun verifySupervisorPin(pin: String): Boolean {
+        if (pin.isBlank()) return false
+        // 1. Cek terhadap master PIN supervisor default (123456) atau akun owner
+        if (pin == "123456" || pin == DemoAccounts.accounts["owner"]?.pin) return true
+
+        // 2. Jika akun yang login adalah Owner/Admin, verifikasi PIN aktifnya
+        val s = session.session.first()
+        val savedHash = session.readPinHash()
+        if (s != null && (s.role == UserRole.OWNER || s.role == UserRole.ADMIN_OUTLET) && savedHash != null) {
+            if (PinHash.verify(s.uid, pin, savedHash)) return true
+        }
+        return false
+    }
+
+    /**
+     * Memastikan sesi memiliki token Firebase Auth aktif di perangkat.
+     * Jika pengguna belum login online via email, signInAnonymously digunakan
+     * agar request Cloud Firestore membawa token valid dan tidak tertolak transport layer.
+     */
+    suspend fun ensureCloudAuth() {
+        if (firebaseAuth.currentUser == null) {
+            runCatching {
+                firebaseAuth.signInAnonymously().await()
+            }
+        }
+    }
+
     suspend fun logout() {
         runCatching { firebaseAuth.signOut() }
         session.clear()

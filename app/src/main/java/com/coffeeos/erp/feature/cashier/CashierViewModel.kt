@@ -54,7 +54,14 @@ class CashierViewModel @Inject constructor(
     private val customerRepo: CustomerRepository,
     private val cfdBridge: CustomerDisplayBridge,
     private val firebaseHealth: FirebaseHealthService,
+    private val authRepo: com.coffeeos.erp.core.data.auth.AuthRepository,
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            authRepo.ensureCloudAuth()
+        }
+    }
 
     val firebaseHealthState: StateFlow<FirebaseHealthState> = firebaseHealth.health
 
@@ -63,6 +70,9 @@ class CashierViewModel @Inject constructor(
             firebaseHealth.checkHealth()
         }
     }
+
+    suspend fun verifySupervisorPin(pin: String): Boolean =
+        authRepo.verifySupervisorPin(pin)
 
     data class UiState(
         val cart: List<CartLine> = emptyList(),

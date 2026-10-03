@@ -33,31 +33,41 @@ class DrinkModifierTest {
             ice = IceLevel.LESS,
             sugar = SugarLevel.LESS
         )
-        assertEquals("Less Ice, Less Sugar (50%)", mods.toSummary())
+        // Format Design.md: "Iced · Regular · Less · Fresh Milk"
+        val summary = mods.toSummary()
+        assertTrue(summary.contains("Iced"))
+        assertTrue(summary.contains("Regular"))
+        assertTrue(summary.contains("Less"))
+        assertTrue(summary.contains("Fresh Milk"))
     }
 
     @Test
     fun `summary dengan addon dan catatan menyertakan semua detail`() {
         val mods = SelectedModifiers(
-            ice = IceLevel.NO_ICE,
+            ice = IceLevel.HOT,
             sugar = SugarLevel.NO_SUGAR,
+            size = DrinkSize.LARGE,
+            milk = MilkOption.OAT_MILK,
             addOns = listOf(
-                AddOn("extra_shot", "Extra Espresso Shot", 5_000L),
-                AddOn("oatmilk", "Ganti Oat Milk", 6_000L)
+                AddOn("extra_shot", "Extra Shot", 5_000L),
+                AddOn("caramel_drizzle", "Caramel Drizzle", 4_000L)
             ),
             notes = "jangan terlalu panas"
         )
         val summary = mods.toSummary()
-        assertTrue(summary.contains("No Ice"))
-        assertTrue(summary.contains("No Sugar (0%)"))
-        assertTrue(summary.contains("+Extra Espresso Shot, Ganti Oat Milk"))
+        assertTrue(summary.contains("Hot"))
+        assertTrue(summary.contains("Large"))
+        assertTrue(summary.contains("No"))
+        assertTrue(summary.contains("Oat Milk"))
+        assertTrue(summary.contains("+Extra Shot, Caramel Drizzle"))
         assertTrue(summary.contains("(jangan terlalu panas)"))
     }
 
     @Test
-    fun `default add-on list memiliki 5 pilihan populer cafe`() {
-        assertEquals(5, DEFAULT_ADD_ONS.size)
-        assertTrue(DEFAULT_ADD_ONS.any { it.name == "Extra Espresso Shot" && it.extraPrice == 5_000L })
-        assertTrue(DEFAULT_ADD_ONS.any { it.name == "Ganti Oat Milk" && it.extraPrice == 6_000L })
+    fun `default add-on list memiliki 6 pilihan populer cafe`() {
+        assertEquals(6, DEFAULT_ADD_ONS.size)
+        assertTrue(DEFAULT_ADD_ONS.any { it.name == "Extra Shot" && it.extraPrice == 5_000L })
+        assertTrue(DEFAULT_ADD_ONS.any { it.name == "Whipped Cream" && it.extraPrice == 4_000L })
+        assertTrue(DEFAULT_ADD_ONS.any { it.name == "Caramel Drizzle" && it.extraPrice == 4_000L })
     }
 }
