@@ -15,9 +15,14 @@ object OrderTotals {
         val minOrder: Long = 0,
     )
 
-    data class Totals(val subtotal: Long, val discount: Long, val total: Long)
+    data class Totals(
+        val subtotal: Long,
+        val discount: Long,
+        val total: Long,
+        val tax: Long = 0L,
+    )
 
-    fun compute(items: List<ReceiptItem>, promo: Promo? = null): Totals {
+    fun compute(items: List<ReceiptItem>, promo: Promo? = null, applyTax: Boolean = false): Totals {
         val subtotal = items.sumOf { it.qty.toLong() * it.unitPrice }
         var discount = 0L
         if (promo != null && subtotal >= promo.minOrder) {
@@ -25,6 +30,8 @@ object OrderTotals {
             discount += promo.fixedDiscount
             if (discount > subtotal) discount = subtotal
         }
-        return Totals(subtotal, discount, subtotal - discount)
+        val afterDiscount = (subtotal - discount).coerceAtLeast(0L)
+        val tax = if (applyTax) (afterDiscount * 10 / 100) else 0L
+        return Totals(subtotal, discount, afterDiscount + tax, tax)
     }
 }

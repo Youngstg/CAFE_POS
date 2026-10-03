@@ -1,34 +1,20 @@
 package com.coffeeos.erp.ui.theme
 
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 
 /**
- * Design system CoffeeOS (design.md §2–§5).
- * Palet earthy hangat; tanpa merah murni — status semantik turun dari palet.
- * Font custom (Inter/Plus Jakarta Sans) menyusul: butuh file font + review lisensi.
+ * Tema SuKopi POS (DESIGN.md §2 & §10).
+ * Menggantikan palet lama dengan visual bersih, flat, dan satu aksen oranye-merah (#F04A23).
  */
 
-// --- Brand ---
-private val Coffee900 = Color(0xFF3B2417)
-private val Coffee700 = Color(0xFF6B4226)
-private val Coffee500 = Color(0xFF9C6644)
-private val Latte200 = Color(0xFFE8D5C4)
-private val Latte100 = Color(0xFFF5EBE0)
-private val Cream50 = Color(0xFFFBF7F2)
-
-// --- Sekunder ---
-private val Sage700 = Color(0xFF4B6350)
-private val Sage200 = Color(0xFFD3DFD4)
-
-/** Warna semantik status terpadu (design.md §9) — sama di semua modul. */
 @Immutable
 data class StatusColors(
     val safe: Color,
@@ -43,61 +29,116 @@ data class StatusColors(
     val neutralContainer: Color,
 )
 
-private val DefaultStatus = StatusColors(
-    safe = Sage700,
-    safeContainer = Sage200,
-    warning = Color(0xFFC98A2C),
-    warningContainer = Color(0xFFF3E3C3),
-    stop = Color(0xFFB3402F),
-    stopContainer = Color(0xFFF2D3CC),
-    info = Color(0xFF6B7FA6),
-    infoContainer = Color(0xFFD9E1F0),
-    neutral = Color(0xFF8A7B6D),
-    neutralContainer = Latte200
+private val LightStatus = StatusColors(
+    safe = Success,
+    safeContainer = SuccessContainer,
+    warning = Warning,
+    warningContainer = WarningContainer,
+    stop = Danger,
+    stopContainer = DangerContainer,
+    info = Info,
+    infoContainer = InfoContainer,
+    neutral = TextSecondary,
+    neutralContainer = Outline
 )
 
-val LocalStatusColors = staticCompositionLocalOf { DefaultStatus }
+private val DarkStatus = StatusColors(
+    safe = Success,
+    safeContainer = Color(0xFF1E3324),
+    warning = Warning,
+    warningContainer = Color(0xFF3D2E0E),
+    stop = Danger,
+    stopContainer = Color(0xFF3D1510),
+    info = Info,
+    infoContainer = Color(0xFF1E2A3D),
+    neutral = TextSecondaryDark,
+    neutralContainer = OutlineDark
+)
+
+val LocalStatusColors = staticCompositionLocalOf { LightStatus }
 
 private val LightColors = lightColorScheme(
-    primary = Coffee700,
-    onPrimary = Cream50,
-    primaryContainer = Latte200,
-    onPrimaryContainer = Coffee900,
-    secondary = Coffee500,
-    tertiary = Sage700,
-    background = Latte100,
-    onBackground = Coffee900,
-    surface = Cream50,
-    onSurface = Coffee900,
-    surfaceVariant = Latte200,
-    onSurfaceVariant = Coffee900,
-    error = Color(0xFFB3402F),
-    tertiaryContainer = Sage200
+    primary = Primary,
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = Primary,
+    background = Background,
+    onBackground = TextPrimary,
+    surface = Surface,
+    onSurface = TextPrimary,
+    surfaceVariant = SurfaceVariant,
+    onSurfaceVariant = TextSecondary,
+    outline = Outline,
+    error = Danger,
 )
 
-private val CoffeeosShapes = Shapes(
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(16.dp)
+private val DarkColors = darkColorScheme(
+    primary = PrimaryDark,
+    onPrimary = SurfaceDark,
+    primaryContainer = PrimaryContainerDark,
+    onPrimaryContainer = PrimaryDark,
+    background = BackgroundDark,
+    onBackground = TextPrimaryDark,
+    surface = SurfaceDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = OutlineDark,
+    error = Danger,
 )
 
-/** Aksen energi khusus kasir (Fase 1 Croizan): oranye untuk Checkout/＋/KPI.
- * Token tambahan — palet dasar design.md tidak diubah. */
-val EnergyOrange = Color(0xFFE8641C)
-val EnergyOrangeDark = Color(0xFFC24E12)
-
-/** Ambang selisih kas "kecil" (design.md §8.3): di bawah ini kuning, di atasnya merah. */
+/** Ambang selisih kas untuk shift. */
 const val SMALL_DIFF_THRESHOLD = 10_000L
 
+/**
+ * Tema utama SuKopi POS (DESIGN.md §10).
+ */
 @Composable
-fun CoffeeosTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = LightColors,
-        shapes = CoffeeosShapes,
-        content = content
+fun SukopiTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    val extended = SukopiColors(
+        info = Info,
+        infoContainer = InfoContainer,
+        warning = Warning,
+        warningContainer = WarningContainer,
+        danger = Danger,
+        dangerContainer = DangerContainer,
+        success = Success,
+        successContainer = SuccessContainer,
+        textPrimary = TextPrimary,
+        textSecondary = TextSecondary,
+        textTertiary = TextTertiary,
+        outlineStrong = OutlineStrong,
+        purple = Purple,
+        badgeRed = BadgeRed,
     )
+    val statusColors = if (darkTheme) DarkStatus else LightStatus
+    val colorScheme = if (darkTheme) DarkColors else LightColors
+
+    CompositionLocalProvider(
+        LocalSukopiColors provides extended,
+        LocalStatusColors provides statusColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = SukopiTypography,
+            shapes = SukopiShapes,
+            content = content
+        )
+    }
 }
 
-/** Akses: MaterialTheme.status.warning dst. */
+/** Alias untuk kompatibilitas kode yang memanggil CoffeeosTheme. */
+@Composable
+fun CoffeeosTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    SukopiTheme(darkTheme = darkTheme, content = content)
+}
+
+/** Akses cepat: MaterialTheme.status.warning, dst. */
 val MaterialTheme.status: StatusColors
     @Composable get() = LocalStatusColors.current

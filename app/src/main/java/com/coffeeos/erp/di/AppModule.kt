@@ -5,6 +5,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.coffeeos.erp.core.data.local.AppDatabase
+import com.coffeeos.erp.core.data.local.MIGRATION_4_5
+import com.coffeeos.erp.core.data.local.MIGRATION_5_6
+import com.coffeeos.erp.core.data.local.MIGRATION_6_7
 import com.coffeeos.erp.core.data.local.PosDao
 import com.coffeeos.erp.printing.FakePdfPrinter
 import com.coffeeos.erp.printing.PrinterRepository
@@ -26,7 +29,11 @@ object AppModule {
     @Provides @Singleton
     fun provideDb(@ApplicationContext ctx: Context): AppDatabase =
         Room.databaseBuilder(ctx, AppDatabase::class.java, "coffeeos.db")
-            .fallbackToDestructiveMigration()
+            // Migrasi proper — JANGAN pakai fallbackToDestructiveMigration di production
+            // (akan hapus semua data lokal saat version DB naik)
+            .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            // Fallback hanya untuk install baru (belum ada DB sama sekali)
+            .fallbackToDestructiveMigrationOnDowngrade()
             .addCallback(SeedCallback())
             .build()
 
@@ -34,6 +41,14 @@ object AppModule {
 
     @Provides @Singleton
     fun providePrinter(fake: FakePdfPrinter): PrinterRepository = fake
+
+    @Provides @Singleton
+    fun provideFirestore(): com.google.firebase.firestore.FirebaseFirestore =
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+    @Provides @Singleton
+    fun provideFirebaseAuth(): com.google.firebase.auth.FirebaseAuth =
+        com.google.firebase.auth.FirebaseAuth.getInstance()
 }
 
 /** Seed demo 1 outlet agar APK langsung bisa didemokan offline. */

@@ -32,4 +32,22 @@ class OrderTotalsTest {
         assertEquals(51_000L, t.discount)
         assertEquals(0L, t.total)
     }
+
+    @Test fun `pajak restoran PB1 10 persen tanpa promo`() {
+        val t = OrderTotals.compute(items, applyTax = true)
+        assertEquals(51_000L, t.subtotal)
+        assertEquals(0L, t.discount)
+        assertEquals(5_100L, t.tax)
+        assertEquals(56_100L, t.total)
+    }
+
+    @Test fun `pajak restoran PB1 10 persen setelah diskon promo`() {
+        val t = OrderTotals.compute(items, OrderTotals.Promo(percentOff = 10, minOrder = 50_000), applyTax = true)
+        assertEquals(51_000L, t.subtotal)
+        assertEquals(5_100L, t.discount)
+        // afterDiscount = 51_000 - 5_100 = 45_900
+        // tax = 45_900 * 10 / 100 = 4_590
+        assertEquals(4_590L, t.tax)
+        assertEquals(50_490L, t.total)
+    }
 }

@@ -10,4 +10,7 @@ object Routes {
     const val SHIFT = "shift"
     const val SUPPLY = "supply"
     const val MENU = "menu"
+    const val SELF_ORDER = "self_order"
+    const val QUEUE_BOARD = "queue_board"
+    const val CUSTOMER_DISPLAY = "customer_display"
 }

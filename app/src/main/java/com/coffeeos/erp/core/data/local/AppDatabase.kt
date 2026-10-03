@@ -8,11 +8,14 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Room = source of truth UI (offline-first). Firestore hanya untuk sync antar HP.
  * Skema dipetakan dari docs/legacy-spec + aturan stok 10%/2%.
+ * v5: tambah tabel order_items (untuk KDS detail) + kolom orderSeq di orders.
  */
 @Entity(tableName = "ingredients")
 data class IngredientEntity(
@@ -52,6 +55,11 @@ data class OrderEntity(
     val outletId: String,
     val status: String, // QUEUED/COOKING/READY/PAID/CONFLICT_NEED_REVIEW
     val total: Long,
+    val orderSeq: Int = 0,   // Nomor urut per shift (#001, #002, ...)
+    val shiftId: String = "", // ID shift saat order dibuat
+    val paymentMethod: String = "TUNAI", // TUNAI / QRIS / TRANSFER
+    val customerName: String = "", // Nama atau nomor akrilik antrean
+    val orderType: String = "DINE_IN", // DINE_IN atau TAKE_AWAY
     val createdAt: Long = System.currentTimeMillis(),
     val pendingSync: Boolean = true,
 )
@@ -176,6 +184,34 @@ interface PosDao {
     @Query("SELECT IFNULL(SUM(total),0) FROM orders WHERE outletId = :outletId AND status = 'PAID'")
     suspend fun paidTotal(outletId: String): Long
 
+    @Query("SELECT * FROM orders WHERE outletId = :outletId AND status = 'PAID' AND createdAt >= :sinceEpoch ORDER BY createdAt ASC")
+    suspend fun listPaidOrdersSince(outletId: String, sinceEpoch: Long): List<OrderEntity>
+
+    @Query("""
+        SELECT oi.menuName, SUM(oi.qty) as totalQty, SUM(oi.qty * oi.unitPrice) as totalRevenue
+        FROM order_items oi
+        INNER JOIN orders o ON oi.orderId = o.id
+        WHERE o.outletId = :outletId AND o.status = 'PAID' AND o.createdAt >= :sinceEpoch
+        GROUP BY oi.menuName
+        ORDER BY totalQty DESC
+        LIMIT 5
+    """)
+    suspend fun topSellingItemsSince(outletId: String, sinceEpoch: Long): List<TopSellingItem>
+
+    /** Nomor urut order tertinggi untuk shift tertentu (untuk generate #001, #002...) */
+    @Query("SELECT IFNULL(MAX(orderSeq),0) FROM orders WHERE shiftId = :shiftId")
+    suspend fun maxOrderSeq(shiftId: String): Int
+
+    // ---- Order Items ----
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrderItems(items: List<OrderItemEntity>)
+
+    @Query("SELECT * FROM order_items WHERE orderId = :orderId ORDER BY key ASC")
+    fun observeOrderItems(orderId: String): Flow<List<OrderItemEntity>>
+
+    @Query("SELECT * FROM order_items WHERE orderId = :orderId ORDER BY key ASC")
+    suspend fun getOrderItems(orderId: String): List<OrderItemEntity>
+
     // ---- Supply ----
     @Query("SELECT * FROM suppliers WHERE outletId = :outletId ORDER BY name ASC")
     fun observeSuppliers(outletId: String): Flow<List<SupplierEntity>>
@@ -207,11 +243,99 @@ interface PosDao {
 
     @Query("SELECT * FROM recipes WHERE menuId IN (:menuIds)")
     suspend fun recipesForMenus(menuIds: List<String>): List<RecipeEntity>
+
+    // ---- Customers & Loyalty ----
+    @Query("SELECT * FROM customers WHERE phone = :phone LIMIT 1")
+    suspend fun customerByPhone(phone: String): CustomerEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertCustomer(entity: CustomerEntity)
+
+    @Query("SELECT * FROM customers ORDER BY totalSpent DESC LIMIT :limit")
+    suspend fun topCustomers(limit: Int = 20): List<CustomerEntity>
+}
+
+/** Data class untuk menu terlaris di Owner Dashboard. */
+data class TopSellingItem(
+    val menuName: String,
+    val totalQty: Int,
+    val totalRevenue: Long,
+)
+
+/**
+ * Migrasi v4 → v5:
+ * - Tambah kolom orderSeq, shiftId, paymentMethod ke tabel orders
+ * - Tambah tabel order_items untuk detail KDS
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Tambah kolom baru di tabel orders
+        database.execSQL("ALTER TABLE orders ADD COLUMN orderSeq INTEGER NOT NULL DEFAULT 0")
+        database.execSQL("ALTER TABLE orders ADD COLUMN shiftId TEXT NOT NULL DEFAULT ''")
+        database.execSQL("ALTER TABLE orders ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT 'TUNAI'")
+
+        // Buat tabel order_items baru
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS order_items (
+                `key` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `orderId` TEXT NOT NULL,
+                `menuName` TEXT NOT NULL,
+                `variant` TEXT,
+                `qty` INTEGER NOT NULL,
+                `unitPrice` INTEGER NOT NULL,
+                `notes` TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY(`orderId`) REFERENCES `orders`(`id`) ON DELETE CASCADE
+            )
+        """.trimIndent())
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_order_items_orderId ON order_items(orderId)")
+    }
+}
+
+/**
+ * Migrasi v5 → v6:
+ * - Tambah kolom customerName dan orderType ke tabel orders
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE orders ADD COLUMN customerName TEXT NOT NULL DEFAULT ''")
+        database.execSQL("ALTER TABLE orders ADD COLUMN orderType TEXT NOT NULL DEFAULT 'DINE_IN'")
+    }
+}
+
+/**
+ * Migrasi v6 → v7:
+ * - Tambah tabel customers untuk loyalty stempel kopi
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS customers (
+                phone TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL DEFAULT '',
+                stamps INTEGER NOT NULL DEFAULT 0,
+                totalOrders INTEGER NOT NULL DEFAULT 0,
+                totalSpent INTEGER NOT NULL DEFAULT 0,
+                lastVisit INTEGER NOT NULL DEFAULT 0
+            )
+        """.trimIndent())
+    }
 }
 
 @Database(
-    entities = [IngredientEntity::class, MenuEntity::class, RecipeEntity::class, OrderEntity::class, PendingMutation::class, ShiftEntity::class, SupplierEntity::class, PurchaseOrderEntity::class, PromoEntity::class],
-    version = 4,
+    entities = [
+        IngredientEntity::class,
+        MenuEntity::class,
+        RecipeEntity::class,
+        OrderEntity::class,
+        OrderItemEntity::class,
+        PendingMutation::class,
+        ShiftEntity::class,
+        SupplierEntity::class,
+        PurchaseOrderEntity::class,
+        PromoEntity::class,
+        CustomerEntity::class,
+    ],
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

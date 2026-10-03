@@ -131,8 +131,21 @@ class RealtimeSync @Inject constructor(private val dao: PosDao) {
         val status = doc.getString("status") ?: local?.status ?: "QUEUED"
         val total = doc.getLong("total") ?: local?.total ?: 0L
         val createdAt = doc.getTimestamp("createdAt")?.toDate()?.time
-            ?: local?.createdAt ?: System.currentTimeMillis()
-        dao.upsertOrder(OrderEntity(doc.id, outletId, status, total, createdAt, pendingSync = false))
+        dao.upsertOrder(
+            OrderEntity(
+                id = doc.id,
+                outletId = outletId,
+                status = status,
+                total = total,
+                orderSeq = doc.getLong("seq")?.toInt() ?: local?.orderSeq ?: 0,
+                shiftId = doc.getString("shiftId") ?: local?.shiftId ?: "",
+                paymentMethod = doc.getString("payment") ?: local?.paymentMethod ?: "TUNAI",
+                customerName = doc.getString("customer") ?: local?.customerName ?: "",
+                orderType = doc.getString("type") ?: local?.orderType ?: "DINE_IN",
+                createdAt = createdAt ?: local?.createdAt ?: System.currentTimeMillis(),
+                pendingSync = false
+            )
+        )
     }
 
     private suspend fun applyIngredient(outletId: String, change: DocumentChange) {
@@ -289,3 +302,4 @@ class RealtimeSync @Inject constructor(private val dao: PosDao) {
         }
     }
 }
+

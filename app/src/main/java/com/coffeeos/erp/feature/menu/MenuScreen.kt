@@ -2,20 +2,51 @@
 
 package com.coffeeos.erp.feature.menu
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,206 +57,367 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.coffeeos.erp.ui.components.ConfirmDialog
+import com.coffeeos.erp.core.data.local.MenuEntity
+import com.coffeeos.erp.core.util.toRupiah
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Surface
 import com.coffeeos.erp.ui.components.EmptyState
+import com.coffeeos.erp.ui.components.animateItem
+import com.coffeeos.erp.ui.theme.EnergyOrange
+import com.coffeeos.erp.ui.theme.PillShape
+import com.coffeeos.erp.ui.theme.SukopiTheme
+import com.coffeeos.erp.ui.theme.status
+
+/** Kategori baku — bebas extend di sini tanpa ganti DB. */
+val PRESET_CATEGORIES = listOf(
+    "Kopi", "Non-Kopi", "Minuman Dingin", "Minuman Panas",
+    "Makanan Ringan", "Makanan Berat", "Dessert", "Promo", "Lainnya"
+)
 
 /**
- * Katalog owner/admin (design.md §8.7): CRUD menu + editor resep dua panel
- * (bahan tersedia | komposisi) + promo dengan switch besar. Hapus destruktif
- * selalu konfirmasi dialog (§11).
+ * Manajemen menu owner: daftar + form tambah/edit + editor resep + promo.
+ * Perbaikan:
+ * - Edit menu (nama/harga/kategori) — bukan hanya tambah/hapus
+ * - Dropdown kategori (bukan free text) dengan opsi preset
+ * - Bahan resep yang sudah dipakai di-highlight
+ * - Form tersimpan di tab terpisah (tab-based layout)
  */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MenuScreen(outletId: String, vm: MenuViewModel = hiltViewModel()) {
-    val ui by vm.ui.collectAsState()
     val menus by remember(outletId) { vm.menus(outletId) }.collectAsState()
     val ingredients by remember(outletId) { vm.ingredients(outletId) }.collectAsState()
-    val promos by remember(outletId) { vm.promos(outletId) }.collectAsState()
-    val selected by vm.selectedMenu.collectAsState()
     val recipes by vm.recipes.collectAsState()
+    val selectedMenuId by vm.selectedMenu.collectAsState()
+    val ui by vm.ui.collectAsState()
 
-    var menuName by remember { mutableStateOf("") }
-    var menuPrice by remember { mutableStateOf("") }
-    var menuCat by remember { mutableStateOf("") }
-    var qty by remember { mutableStateOf("") }
-    var promoName by remember { mutableStateOf("") }
-    var promoPct by remember { mutableStateOf("10") }
-    var promoMin by remember { mutableStateOf("50000") }
-    var confirmDeleteMenu by remember { mutableStateOf<String?>(null) }
-    var confirmDeletePromo by remember { mutableStateOf<String?>(null) }
+    var tabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Daftar Menu", "Tambah / Edit", "Resep BOM")
 
-    confirmDeleteMenu?.let { menuId ->
-        ConfirmDialog(
-            title = "Hapus menu?",
-            body = "Resep menu ini ikut terhapus di semua HP. Stok bahan tidak berubah.",
-            confirmLabel = "Hapus",
-            onConfirm = { vm.deleteMenu(menuId); confirmDeleteMenu = null },
-            onDismiss = { confirmDeleteMenu = null }
-        )
-    }
-    confirmDeletePromo?.let { promoId ->
-        ConfirmDialog(
-            title = "Hapus promo?",
-            body = "Promo hilang dari kasir semua HP.",
-            confirmLabel = "Hapus",
-            onConfirm = { vm.deletePromo(promoId); confirmDeletePromo = null },
-            onDismiss = { confirmDeletePromo = null }
-        )
-    }
-
-    LazyColumn(
-        Modifier.fillMaxSize().padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item {
-            Text("Katalog — Menu & Resep", style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = menuName, onValueChange = { menuName = it },
-                    label = { Text("Nama menu") }, modifier = Modifier.weight(1f), singleLine = true
+    Column(Modifier.fillMaxSize()) {
+        ScrollableTabRow(selectedTabIndex = tabIndex) {
+            tabs.forEachIndexed { i, label ->
+                Tab(selected = tabIndex == i, onClick = { tabIndex = i }, text = { Text(label) })
+            }
+        }
+        AnimatedContent(
+            targetState = tabIndex,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "menuTab"
+        ) { tab ->
+            when (tab) {
+                0 -> MenuListTab(
+                    menus = menus,
+                    selectedId = selectedMenuId,
+                    onSelect = { vm.selectMenu(it); tabIndex = 2 },
+                    onEdit = { vm.selectMenu(it); tabIndex = 1 },
+                    onDelete = { vm.deleteMenu(it) },
+                    message = ui.message
                 )
-                OutlinedTextField(
-                    value = menuPrice, onValueChange = { menuPrice = it },
-                    label = { Text("Harga") }, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                1 -> MenuFormTab(
+                    outletId = outletId,
+                    editingMenu = menus.firstOrNull { it.id == selectedMenuId },
+                    onSave = { id, name, price, cat ->
+                        vm.saveMenu(outletId, id, name, price, cat)
+                        tabIndex = 0
+                    }
+                )
+                else -> RecipeTab(
+                    selectedMenuId = selectedMenuId,
+                    menus = menus,
+                    ingredients = ingredients,
+                    existingRecipes = recipes,
+                    onSelectMenu = { vm.selectMenu(it) },
+                    onAddRecipe = { menuId, ingId, qty -> vm.saveRecipe(menuId, ingId, qty) },
+                    onDeleteRecipe = { menuId, ingId -> vm.deleteRecipe(menuId, ingId) }
                 )
             }
-            OutlinedTextField(
-                value = menuCat, onValueChange = { menuCat = it },
-                label = { Text("Kategori (mis. Minuman)") },
-                modifier = Modifier.fillMaxWidth(), singleLine = true
-            )
-            Button(onClick = {
-                vm.saveMenu(outletId, null, menuName, menuPrice.toLongOrNull() ?: 0, menuCat)
-                menuName = ""; menuPrice = ""; menuCat = ""
-            }) { Text("＋ Tambah Menu") }
-            ui.message?.let { Text(it) }
+        }
+    }
+}
+
+@Composable
+private fun MenuListTab(
+    menus: List<MenuEntity>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    message: String?,
+) {
+    var deleteConfirm by remember { mutableStateOf<String?>(null) }
+
+    deleteConfirm?.let { menuId ->
+        val menu = menus.firstOrNull { it.id == menuId }
+        AlertDialog(
+            onDismissRequest = { deleteConfirm = null },
+            title = { Text("Hapus Menu?") },
+            text = { Text("\"${menu?.name}\" akan dihapus dari sistem. Resepnya juga ikut terhapus.") },
+            confirmButton = {
+                Button(onClick = { onDelete(menuId); deleteConfirm = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Hapus") }
+            },
+            dismissButton = { TextButton(onClick = { deleteConfirm = null }) { Text("Batal") } }
+        )
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        message?.let {
+            Text(it, color = if (it.contains("Tersimpan")) MaterialTheme.status.safe else MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
         }
         if (menus.isEmpty()) {
-            item { EmptyState(glyph = "☕", title = "Belum ada menu", hint = "Tambah menu pertama di atas.") }
-        }
-        items(menus, key = { it.id }) { menu ->
-            Card(
-                onClick = { vm.selectMenu(if (selected == menu.id) null else menu.id) },
-                modifier = Modifier.fillMaxWidth().animateItemPlacement()
-            ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(menu.name, style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "${menu.category} • Rp${menu.price} • " +
-                                if (menu.isAvailable) "Jual" else "Mati (stok)",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    TextButton(onClick = { confirmDeleteMenu = menu.id }) { Text("Hapus") }
-                }
-            }
-        }
-        selected?.let { menuId ->
-            item {
-                val ingNames = ingredients.associateBy({ it.id }, { it.name })
-                Text(
-                    "Resep: ${menus.firstOrNull { it.id == menuId }?.name}",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                if (recipes.isEmpty()) {
-                    Text("Belum ada bahan — tambah dari daftar bawah.", style = MaterialTheme.typography.bodySmall)
-                }
-                recipes.forEach { r ->
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            EmptyState(glyph = "🍽️", title = "Belum ada menu", hint = "Tap tab 'Tambah / Edit' untuk membuat menu pertama.")
+        } else {
+            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                items(menus, key = { it.id }) { menu ->
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = if (menu.id == selectedId)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(
+                            1.dp,
+                            if (menu.id == selectedId) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier.fillMaxWidth().animateItem()
                     ) {
-                        Text("${ingNames[r.ingredientId] ?: r.ingredientId} — ${r.qtyPerPortion}")
-                        TextButton(onClick = { vm.deleteRecipe(menuId, r.ingredientId) }) {
-                            Text("Hapus")
-                        }
-                    }
-                }
-                Text("Tambah bahan ke resep (takaran per porsi):", style = MaterialTheme.typography.bodySmall)
-                OutlinedTextField(
-                    value = qty, onValueChange = { qty = it },
-                    label = { Text("Takaran") }, modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-                Text("Kiri: bahan tersedia (tap ＋) — kanan: komposisi di atas.", style = MaterialTheme.typography.bodySmall)
-                ingredients.forEach { ing ->
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("${ing.name} (${ing.unit})")
-                            TextButton(onClick = { vm.deleteIngredient(ing.id) }) {
-                                Text("Hapus bahan", style = MaterialTheme.typography.bodySmall)
+                        Row(
+                            Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(menu.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    "${menu.category} · ${menu.price.toRupiah()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (!menu.isAvailable) {
+                                    Text("⛔ Stok habis", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.status.stop)
+                                }
+                            }
+                            Row {
+                                IconButton(onClick = { onEdit(menu.id) }) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { onSelect(menu.id) }) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Resep", tint = MaterialTheme.status.safe)
+                                }
+                                IconButton(onClick = { deleteConfirm = menu.id }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.error)
+                                }
                             }
                         }
-                        TextButton(onClick = {
-                            vm.saveRecipe(menuId, ing.id, qty.toDoubleOrNull() ?: 0.0)
-                        }) { Text("＋") }
                     }
                 }
             }
         }
-        item {
-            Text("Promo", style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+@Composable
+private fun MenuFormTab(
+    outletId: String,
+    editingMenu: MenuEntity?,
+    onSave: (String?, String, Long, String) -> Unit,
+) {
+    var name by remember(editingMenu?.id) { mutableStateOf(editingMenu?.name ?: "") }
+    var priceText by remember(editingMenu?.id) { mutableStateOf(editingMenu?.price?.toString() ?: "") }
+    var category by remember(editingMenu?.id) { mutableStateOf(editingMenu?.category ?: PRESET_CATEGORIES.first()) }
+    var categoryDropdown by remember { mutableStateOf(false) }
+
+    val isEdit = editingMenu != null
+    val priceVal = priceText.toLongOrNull() ?: 0L
+
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            if (isEdit) "Edit Menu: ${editingMenu?.name}" else "Tambah Menu Baru",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nama Menu") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = priceText,
+            onValueChange = { if (it.all(Char::isDigit)) priceText = it },
+            label = { Text("Harga (Rp)") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            supportingText = { if (priceVal > 0) Text("= ${priceVal.toRupiah()}") }
+        )
+
+        // Dropdown kategori
+        Box {
             OutlinedTextField(
-                value = promoName, onValueChange = { promoName = it },
-                label = { Text("Nama promo") }, modifier = Modifier.fillMaxWidth(), singleLine = true
+                value = category,
+                onValueChange = { category = it }, // Tetap izinkan ketik bebas
+                label = { Text("Kategori") },
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = { categoryDropdown = true }) {
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = "Pilih kategori")
+                    }
+                }
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = promoPct, onValueChange = { promoPct = it },
-                    label = { Text("% (0-100)") }, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                OutlinedTextField(
-                    value = promoMin, onValueChange = { promoMin = it },
-                    label = { Text("Min. order") }, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
-            Button(onClick = {
-                vm.savePromo(
-                    outletId, null, promoName,
-                    promoPct.toIntOrNull() ?: 0, 0, promoMin.toLongOrNull() ?: 0, true
-                )
-                promoName = ""
-            }) { Text("＋ Tambah Promo") }
-        }
-        items(promos, key = { it.id }) { promo ->
-            Row(
-                Modifier.fillMaxWidth().animateItemPlacement(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            DropdownMenu(
+                expanded = categoryDropdown,
+                onDismissRequest = { categoryDropdown = false }
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(promo.name)
-                    Text(
-                        "${promo.percentOff}% • min Rp${promo.minOrder} • " +
-                            if (promo.active) "Aktif" else "Mati",
-                        style = MaterialTheme.typography.bodySmall
+                PRESET_CATEGORIES.forEach { cat ->
+                    DropdownMenuItem(
+                        text = { Text(cat) },
+                        onClick = { category = cat; categoryDropdown = false }
                     )
                 }
-                Switch(
-                    checked = promo.active,
-                    onCheckedChange = {
-                        vm.savePromo(
-                            outletId, promo.id, promo.name, promo.percentOff,
-                            promo.fixedDiscount, promo.minOrder, it
-                        )
+            }
+        }
+
+        Button(
+            onClick = { onSave(editingMenu?.id, name.trim(), priceVal, category.trim().ifBlank { "Umum" }) },
+            enabled = name.isNotBlank() && priceVal > 0,
+            shape = PillShape,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = EnergyOrange)
+        ) {
+            Text(
+                if (isEdit) "Simpan Perubahan" else "Tambahkan ke Menu",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RecipeTab(
+    selectedMenuId: String?,
+    menus: List<MenuEntity>,
+    ingredients: List<com.coffeeos.erp.core.data.local.IngredientEntity>,
+    existingRecipes: List<com.coffeeos.erp.core.data.local.RecipeEntity>,
+    onSelectMenu: (String) -> Unit,
+    onAddRecipe: (String, String, Double) -> Unit,
+    onDeleteRecipe: (String, String) -> Unit,
+) {
+    val selectedMenu = menus.firstOrNull { it.id == selectedMenuId }
+    val usedIngredientIds = existingRecipes.map { it.ingredientId }.toSet()
+
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Editor Resep BOM", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+        // Pilih menu
+        if (selectedMenu == null) {
+            Text("Pilih menu di tab 'Daftar Menu' → tombol ＋", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@Column
+        }
+
+        Text(
+            "Menu: ${selectedMenu.name}",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text("Resep saat ini:", style = MaterialTheme.typography.labelMedium)
+
+        if (existingRecipes.isEmpty()) {
+            Text("Belum ada bahan (jual bebas tanpa deduct stok).",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                existingRecipes.forEach { r ->
+                    val ing = ingredients.firstOrNull { it.id == r.ingredientId }
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            Modifier.padding(10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "✓ ${ing?.name ?: r.ingredientId} — ${r.qtyPerPortion} ${ing?.unit ?: ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                            IconButton(
+                                onClick = { onDeleteRecipe(selectedMenuId!!, r.ingredientId) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                            }
+                        }
                     }
+                }
+            }
+        }
+
+        HorizontalDivider()
+        Text("Tambah Bahan:", style = MaterialTheme.typography.labelMedium)
+
+        // Daftar ingredient: sudah dipakai = highlight hijau, belum = normal
+        var qtyInput by remember { mutableStateOf("") }
+        var selectedIng by remember { mutableStateOf<com.coffeeos.erp.core.data.local.IngredientEntity?>(null) }
+
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ingredients.forEach { ing ->
+                val isUsed = ing.id in usedIngredientIds
+                FilterChip(
+                    selected = selectedIng?.id == ing.id,
+                    onClick = { selectedIng = if (selectedIng?.id == ing.id) null else ing },
+                    label = { Text(if (isUsed) "✓ ${ing.name}" else ing.name) },
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = if (isUsed)
+                            MaterialTheme.status.safeContainer
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
-                TextButton(onClick = { confirmDeletePromo = promo.id }) { Text("Hapus") }
+            }
+        }
+
+        selectedIng?.let { ing ->
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = qtyInput,
+                    onValueChange = { qtyInput = it },
+                    label = { Text("Qty per porsi (${ing.unit})") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                Button(
+                    onClick = {
+                        val qty = qtyInput.toDoubleOrNull() ?: return@Button
+                        onAddRecipe(selectedMenuId!!, ing.id, qty)
+                        qtyInput = ""
+                    },
+                    enabled = qtyInput.toDoubleOrNull() != null && (qtyInput.toDoubleOrNull() ?: 0.0) > 0,
+                    shape = PillShape,
+                    modifier = Modifier.height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = EnergyOrange)
+                ) {
+                    Text(if (ing.id in usedIngredientIds) "Update" else "Tambah", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

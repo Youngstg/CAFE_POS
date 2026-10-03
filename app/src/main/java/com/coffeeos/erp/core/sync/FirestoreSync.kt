@@ -305,6 +305,7 @@ class FirestoreSync @Inject constructor(
                 val promoId = str(payload, "promoId") ?: return null
                 col("promos").document(promoId).delete().await()
             }
+            "DINE_IN" -> null
             else -> { /* kind tak dikenal: anggap sukses agar antrean tidak macet */ }
         }
         return null
